@@ -63,6 +63,7 @@ if (isset($_POST['registrar'])) {
 <head>
     <meta charset="UTF-8">
     <title>Registro de Usuarios</title>
+    <link rel="stylesheet" href="../css/style.css">
     <script>
       // Función para mostrar/ocultar campos según el "permiso" seleccionado
       function toggleCampos() {

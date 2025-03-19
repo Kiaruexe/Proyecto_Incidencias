@@ -11,6 +11,7 @@ if (isset($_SESSION['email'])) {
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <link rel="stylesheet" href="../v2/css/style.css">
 </head>
 <body>
 <h1>Login</h1>
