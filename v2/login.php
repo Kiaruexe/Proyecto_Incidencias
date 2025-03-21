@@ -31,14 +31,20 @@ if (isset($_POST["login"])) {
 
     try {
         $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com:3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62');
+        $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
         $consulta = $bd->prepare("SELECT * FROM Usuarios WHERE correo = ?");
         $consulta->execute([$correo]);
 
         if ($consulta->rowCount() === 1) {
             $usuario = $consulta->fetch(PDO::FETCH_ASSOC);
 
+            // Verificamos la contraseña (hasheada)
             if (password_verify($contrasenaIngresada, $usuario['contrasena'])) {
-                $_SESSION['email'] = $usuario['correo'];
+                // Guardamos en sesión
+                $_SESSION['email']     = $usuario['correo'];
+                $_SESSION['idUsuario'] = $usuario['idUsuarios']; // <-- Guardar idUsuario en sesión
+
                 header("Location: cliente/verEquipos.php");
                 exit();
             } else {
