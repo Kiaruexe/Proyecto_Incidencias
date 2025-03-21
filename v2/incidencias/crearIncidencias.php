@@ -7,7 +7,7 @@ if (!isset($_SESSION["idUsuario"])) {
 try {
     $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
     $query = $bd->query("SELECT * FROM Usuarios WHERE idUsuario = " . $_SESSION['idUsuario']);
-    while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
+    while ($row = $query->fetch()) {
         $permiso = $row['permiso'];
     }
 } catch (PDOException $e) {

@@ -24,7 +24,6 @@ if (isset($_POST['registrar'])) {
 
     try {
         $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com:3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62');
-        $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $sql = "INSERT INTO Usuarios (
             usuario, correo, contrasena, permiso, tipoContrato,
@@ -65,30 +64,22 @@ if (isset($_POST['registrar'])) {
     <title>Registro de Usuarios</title>
     <link rel="stylesheet" href="../css/style.css">
     <script>
-      // Función para mostrar/ocultar campos según el "permiso" seleccionado
       function toggleCampos() {
         const permisoSelect = document.getElementById('permiso');
         const valorPermiso = permisoSelect.value;
-
-        // Contenedores que queremos mostrar/ocultar
         const contratoContainer = document.getElementById('contrato-container');
         const direccionesContainer = document.getElementById('direcciones-container');
 
         if (valorPermiso === 'cliente') {
-          // Mostrar
           contratoContainer.style.display = 'block';
           direccionesContainer.style.display = 'block';
         } else {
-          // Ocultar
           contratoContainer.style.display = 'none';
           direccionesContainer.style.display = 'none';
         }
       }
-
-      // Cuando cargue la página, configuramos la visibilidad inicial
       document.addEventListener('DOMContentLoaded', () => {
-        toggleCampos(); // Llamamos una vez para ajustar según el valor por defecto
-        // Y cada vez que cambie el select
+        toggleCampos(); 
         document.getElementById('permiso').addEventListener('change', toggleCampos);
       });
     </script>
@@ -114,8 +105,6 @@ if (isset($_POST['registrar'])) {
         <option value="admin">Admin</option>
         <option value="jefeTecnico">Jefe Tecnico</option>
     </select><br><br>
-
-    <!-- Contenedor para Tipo de Contrato -->
     <div id="contrato-container">
       <label>Tipo de Contrato:</label><br>
       <select name="tipoContrato">
@@ -123,10 +112,7 @@ if (isset($_POST['registrar'])) {
           <option value="mantenimientoManoObra">Mantenimiento Mano de Obra</option>
       </select><br><br>
     </div>
-
-    <!-- Contenedor para todas las direcciones -->
     <div id="direcciones-container">
-      <!-- DIRECCIÓN FISCAL -->
       <h3>Dirección Fiscal</h3>
       <label>CP Fiscal:</label><br>
       <input type="number" name="cpFiscal"><br><br>
@@ -136,8 +122,6 @@ if (isset($_POST['registrar'])) {
       
       <label>Localidad Fiscal:</label><br>
       <input type="text" name="localidadFiscal"><br><br>
-
-      <!-- PRIMERA DIRECCIÓN ADICIONAL -->
       <h3>Primera dirección adicional</h3>
       <label>CP:</label><br>
       <input type="number" name="cp1"><br><br>
@@ -147,8 +131,6 @@ if (isset($_POST['registrar'])) {
 
       <label>Localidad:</label><br>
       <input type="text" name="localidad1"><br><br>
-
-      <!-- SEGUNDA DIRECCIÓN ADICIONAL -->
       <h3>Segunda dirección adicional</h3>
       <label>CP:</label><br>
       <input type="number" name="cp2"><br><br>
