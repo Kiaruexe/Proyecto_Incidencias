@@ -22,6 +22,7 @@ if (isset($_POST['registrar'])) {
     $localidad2        = limpiarCampo($_POST['localidad2']);
     $direccion2        = limpiarCampo($_POST['direccion2']);
 
+    // Hashear la contraseña
     $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
 
     try {
@@ -67,18 +68,29 @@ if (isset($_POST['registrar'])) {
     <meta charset="UTF-8">
     <title>Registro de Usuarios</title>
     <link rel="stylesheet" href="../css/style.css">
+
     <script>
+      // Mostrar/ocultar direcciones + asignar/quitar "required"
       function toggleCampos() {
         const permisoSelect = document.getElementById('permiso');
         const valorPermiso = permisoSelect.value;
+        
         const direccionesContainer = document.getElementById('direcciones-container');
+        const camposFiscales = document.querySelectorAll('.fiscal-field');
 
         if (valorPermiso === 'cliente') {
           direccionesContainer.style.display = 'block';
+          camposFiscales.forEach(campo => {
+            campo.setAttribute('required', 'true');
+          });
         } else {
           direccionesContainer.style.display = 'none';
+          camposFiscales.forEach(campo => {
+            campo.removeAttribute('required');
+          });
         }
       }
+
       document.addEventListener('DOMContentLoaded', () => {
         toggleCampos(); 
         document.getElementById('permiso').addEventListener('change', toggleCampos);
@@ -106,19 +118,21 @@ if (isset($_POST['registrar'])) {
         <option value="admin">Admin</option>
         <option value="jefeTecnico">Jefe Tecnico</option>
     </select><br><br>
+
+    <!-- Sección direcciones -->
     <div id="direcciones-container">
       <h3>Dirección Fiscal</h3>
       <label>CP Fiscal:</label><br>
-      <input type="number" name="cpFiscal"><br><br>
+      <input type="number" name="cpFiscal" class="fiscal-field"><br><br>
       
       <label>Provincia Fiscal:</label><br>
-      <input type="text" name="provinciaFiscal"><br><br>
+      <input type="text" name="provinciaFiscal" class="fiscal-field"><br><br>
       
       <label>Localidad Fiscal:</label><br>
-      <input type="text" name="localidadFiscal"><br><br>
+      <input type="text" name="localidadFiscal" class="fiscal-field"><br><br>
       
       <label>Dirección Fiscal:</label><br>
-      <input type="text" name="direccionFiscal"><br><br>
+      <input type="text" name="direccionFiscal" class="fiscal-field"><br><br>
 
       <h3>Primera dirección adicional</h3>
       <label>CP:</label><br>
