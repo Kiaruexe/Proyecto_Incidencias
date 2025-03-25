@@ -1,5 +1,4 @@
 <?php
-// -- PROCESO DE REGISTRO (PHP) --
 if (isset($_POST['registrar'])) {
     function limpiarCampo($valor) {
         return !empty($valor) ? $valor : null; 
@@ -22,7 +21,6 @@ if (isset($_POST['registrar'])) {
     $localidad2        = limpiarCampo($_POST['localidad2']);
     $direccion2        = limpiarCampo($_POST['direccion2']);
 
-    // Hashear la contraseña
     $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
 
     try {
@@ -119,7 +117,6 @@ if (isset($_POST['registrar'])) {
         <option value="jefeTecnico">Jefe Tecnico</option>
     </select><br><br>
 
-    <!-- Sección direcciones -->
     <div id="direcciones-container">
       <h3>Dirección Fiscal</h3>
       <label>CP Fiscal:</label><br>
