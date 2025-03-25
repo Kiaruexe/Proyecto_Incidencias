@@ -9,16 +9,18 @@ if (isset($_POST['registrar'])) {
     $correo            = $_POST['correo']            ?? null;
     $contrasenaTexto   = $_POST['contrasena']        ?? null;
     $permiso           = $_POST['permiso']           ?? null;
-    $tipoContrato      = $_POST['tipoContrato']      ?? null;
     $cpFiscal          = limpiarCampo($_POST['cpFiscal']);
     $provinciaFiscal   = limpiarCampo($_POST['provinciaFiscal']);
     $localidadFiscal   = limpiarCampo($_POST['localidadFiscal']);
+    $direccionFiscal   = limpiarCampo($_POST['direccionFiscal']);
     $cp1               = limpiarCampo($_POST['cp1']);
     $provincia1        = limpiarCampo($_POST['provincia1']);
     $localidad1        = limpiarCampo($_POST['localidad1']);
+    $direccion1        = limpiarCampo($_POST['direccion1']);
     $cp2               = limpiarCampo($_POST['cp2']);
     $provincia2        = limpiarCampo($_POST['provincia2']);
     $localidad2        = limpiarCampo($_POST['localidad2']);
+    $direccion2        = limpiarCampo($_POST['direccion2']);
 
     $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
 
@@ -26,11 +28,11 @@ if (isset($_POST['registrar'])) {
         $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com:3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62');
 
         $sql = "INSERT INTO Usuarios (
-            usuario, correo, contrasena, permiso, tipoContrato,
-            cpFiscal, provinciaFiscal, localidadFiscal,
-            cp1, provincia1, localidad1,
-            cp2, provincia2, localidad2
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            usuario, correo, contrasena, permiso,
+            cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
+            cp1, provincia1, localidad1, direccion1,
+            cp2, provincia2, localidad2, direccion2
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $bd->prepare($sql);
         $stmt->execute([
@@ -38,16 +40,18 @@ if (isset($_POST['registrar'])) {
             $correo,
             $contrasenaHash,
             $permiso,
-            $tipoContrato,
             $cpFiscal,
             $provinciaFiscal,
             $localidadFiscal,
+            $direccionFiscal,
             $cp1,
             $provincia1,
             $localidad1,
+            $direccion1,
             $cp2,
             $provincia2,
-            $localidad2
+            $localidad2,
+            $direccion2
         ]);
 
         echo "<p style='color:green;'>Usuario registrado con éxito.</p>";
@@ -67,14 +71,11 @@ if (isset($_POST['registrar'])) {
       function toggleCampos() {
         const permisoSelect = document.getElementById('permiso');
         const valorPermiso = permisoSelect.value;
-        const contratoContainer = document.getElementById('contrato-container');
         const direccionesContainer = document.getElementById('direcciones-container');
 
         if (valorPermiso === 'cliente') {
-          contratoContainer.style.display = 'block';
           direccionesContainer.style.display = 'block';
         } else {
-          contratoContainer.style.display = 'none';
           direccionesContainer.style.display = 'none';
         }
       }
@@ -105,13 +106,6 @@ if (isset($_POST['registrar'])) {
         <option value="admin">Admin</option>
         <option value="jefeTecnico">Jefe Tecnico</option>
     </select><br><br>
-    <div id="contrato-container">
-      <label>Tipo de Contrato:</label><br>
-      <select name="tipoContrato">
-          <option value="mantenimientoCompleto">Mantenimiento Completo</option>
-          <option value="mantenimientoManoObra">Mantenimiento Mano de Obra</option>
-      </select><br><br>
-    </div>
     <div id="direcciones-container">
       <h3>Dirección Fiscal</h3>
       <label>CP Fiscal:</label><br>
@@ -122,6 +116,10 @@ if (isset($_POST['registrar'])) {
       
       <label>Localidad Fiscal:</label><br>
       <input type="text" name="localidadFiscal"><br><br>
+      
+      <label>Dirección Fiscal:</label><br>
+      <input type="text" name="direccionFiscal"><br><br>
+
       <h3>Primera dirección adicional</h3>
       <label>CP:</label><br>
       <input type="number" name="cp1"><br><br>
@@ -131,6 +129,10 @@ if (isset($_POST['registrar'])) {
 
       <label>Localidad:</label><br>
       <input type="text" name="localidad1"><br><br>
+
+      <label>Dirección:</label><br>
+      <input type="text" name="direccion1"><br><br>
+
       <h3>Segunda dirección adicional</h3>
       <label>CP:</label><br>
       <input type="number" name="cp2"><br><br>
@@ -140,6 +142,9 @@ if (isset($_POST['registrar'])) {
 
       <label>Localidad:</label><br>
       <input type="text" name="localidad2"><br><br>
+
+      <label>Dirección:</label><br>
+      <input type="text" name="direccion2"><br><br>
     </div>
 
     <input type="submit" name="registrar" value="Registrar Usuario">
