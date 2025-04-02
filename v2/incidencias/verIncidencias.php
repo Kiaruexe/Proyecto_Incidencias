@@ -1,83 +1,88 @@
 <?php
+// Iniciar sesión
 session_start();
+
+// Verificar si el usuario ha iniciado sesión, si no, redirigirlo al login
 if (!isset($_SESSION['idUsuario'])) {
     header("Location: ../login.php");
     exit;
 }
 
 try {
+    // Conexión a la base de datos utilizando PDO
     $bd = new PDO(
         'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 
         'Mapapli', 
         '9R%d5cf62'
     );
+    
+    // Obtener los datos del usuario actual desde la base de datos
     $query = $bd->prepare("SELECT * FROM Usuarios WHERE idUsuarios = ?");
     $query->execute([$_SESSION['idUsuario']]);
     $userRow = $query->fetch();
+
+    // Obtener el tipo de permiso del usuario
     $permiso = $userRow['permiso'];
 } catch (PDOException $e) {
+    // Manejo de errores en la conexión a la base de datos
     echo "Error: " . $e->getMessage();
     exit;
 }
 
-// Restringir acceso a técnicos
-if ($permiso == 'tecnico') {
-    header("Location: ../index.php");
-    exit;
-}
-
-// --- Configuración del filtrado ---
-// Campos permitidos para filtrar
+// Definir los campos permitidos para el filtrado de incidencias
 $allowedFields = [
-    'idIncidencias'      => 'idIncidencias',
-    'fecha'              => 'fecha',
-    'tecnicoAsignado'    => 'tecnicoAsignado',
-    'incidencia'         => 'incidencia',
-    'idUsuario'          => 'idUsuario',
-    'idEquipo'           => 'idEquipo'
+    'idIncidencias'   => 'idIncidencias',
+    'fecha'           => 'fecha',
+    'tecnicoAsignado' => 'tecnicoAsignado',
+    'incidencia'      => 'incidencia',
+    'idUsuario'       => 'idUsuario',
+    'numEquipo'       => 'numEquipo'
 ];
 
+// Obtener el campo y el valor de filtrado desde la URL
 $filterField = isset($_GET['filter_field']) && array_key_exists($_GET['filter_field'], $allowedFields)
     ? $allowedFields[$_GET['filter_field']]
     : '';
-$filterValue = isset($_GET['filter_value']) ? trim($_GET['filter_value']) : ''; // trim() elimina espacios en blanco (u otros caracteres) al inicio y final de una cadena.
+$filterValue = isset($_GET['filter_value']) ? trim($_GET['filter_value']) : '';
 $filterClause = "";
 $params = [];
 
-// Si se eligió un campo y se ingresó un valor, se construye la condición de filtrado
+// Construcción de la condición de filtrado si se ha seleccionado un campo válido y un valor
 if ($filterField !== '' && $filterValue !== '') {
-    // Usamos LIKE para búsquedas parciales
     $filterClause = " AND $filterField LIKE ?";
-    $params[] = '%' . $filterValue . '%';
+    $params[] = '%' . $filterValue . '%'; // Se usa LIKE para permitir coincidencias parciales
 }
 
-// --- Construcción de la consulta según el permiso ---
+// Construcción de la consulta según el permiso del usuario
 $sql = "";
-if ($permiso == 'admin' || $permiso == 'receptor' || $permiso == 'jefeTecnico') {
-    // Para estos roles se muestran todas las incidencias y se puede aplicar el filtro
+if ($permiso == 'admin' || $permiso == 'recepcion' || $permiso == 'jefetecnico') {
+    // Administradores, recepción y jefe técnico pueden ver todas las incidencias
     $sql = "SELECT * FROM Incidencias WHERE 1=1" . $filterClause;
-    // No hay parámetro adicional para el usuario
 } elseif ($permiso == 'cliente') {
-    // Los clientes solo ven sus propias incidencias
+    // Los clientes solo pueden ver sus propias incidencias
     $sql = "SELECT * FROM Incidencias WHERE idUsuario = ? " . $filterClause;
-    array_unshift($params, $_SESSION['idUsuario']);     // array_unshift() añade uno o más elementos al inicio del array, desplazando los existentes.
+    array_unshift($params, $_SESSION['idUsuario']); // Agregar el ID del usuario a los parámetros
 } elseif ($permiso == 'tecnico') {
-    // Técnicos ven incidencias inactivas asignadas a ellos
+    // Los técnicos solo ven incidencias inactivas que les han sido asignadas
     $sql = "SELECT * FROM Incidencias WHERE estado = 0 AND tecnicoAsignado = ? " . $filterClause;
-    array_unshift($params, $_SESSION['idUsuario']);
+    array_unshift($params, $userRow['usuario']); // Agregar el nombre de usuario del técnico
 } else {
+    // Si el usuario no tiene un permiso válido, redirigirlo al login
     header("Location: ../login.php");
     exit;
 }
 
 try {
+    // Preparar y ejecutar la consulta con los parámetros correspondientes
     $stmt = $bd->prepare($sql);
     $stmt->execute($params);
 } catch (PDOException $e) {
+    // Manejo de errores en la consulta
     echo "Error en la consulta: " . $e->getMessage();
     exit;
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -85,6 +90,24 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Incidencias</title>
   <link rel="stylesheet" href="../css/style.css">
+  <style>
+      /* Estilos básicos para la tabla y formulario */
+      table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      th, td {
+          padding: 8px;
+          text-align: left;
+          border: 1px solid #ccc;
+      }
+      th {
+          background-color: #f2f2f2;
+      }
+      form {
+          margin-bottom: 20px;
+      }
+  </style>
 </head>
 <body>
   <h1>Lista de Incidencias</h1>
@@ -100,7 +123,7 @@ try {
       <option value="tecnicoAsignado" <?php if($filterField=='tecnicoAsignado') echo 'selected'; ?>>Técnico Asignado</option>
       <option value="incidencia" <?php if($filterField=='incidencia') echo 'selected'; ?>>Incidencia</option>
       <option value="idUsuario" <?php if($filterField=='idUsuario') echo 'selected'; ?>>ID Usuario</option>
-      <option value="idEquipo" <?php if($filterField=='idEquipo') echo 'selected'; ?>>ID Equipo</option>
+      <option value="numEquipo" <?php if($filterField=='numEquipo') echo 'selected'; ?>>ID Equipo</option>
     </select>
     <input type="text" name="filter_value" placeholder="Valor a buscar" value="<?php echo ($filterValue); ?>">
     <input type="submit" value="Filtrar">
@@ -108,7 +131,7 @@ try {
   </form>
 
   <?php if ($stmt->rowCount() > 0): ?>
-    <table border="1">
+    <table>
       <tr>
         <th>ID</th>
         <th>Fecha</th>
@@ -119,7 +142,7 @@ try {
         <th>Tiempo Intervención</th>
         <th>Tipo Financiación</th>
         <th>ID Usuario</th>
-        <th>ID Equipo</th>
+        <th>Num Equipo</th>
         <th>Incidencia</th>
       </tr>
       <?php while ($row = $stmt->fetch()): ?>
@@ -133,7 +156,7 @@ try {
           <td><?php echo ($row['TIntervencion']); ?> min</td>
           <td><?php echo ($row['tipoFinanciacion']); ?></td>
           <td><?php echo ($row['idUsuario']); ?></td>
-          <td><?php echo ($row['idEquipo']); ?></td>
+          <td><?php echo ($row['numEquipo']); ?></td>
           <td><?php echo ($row['incidencia']); ?></td>
         </tr>
       <?php endwhile; ?>
