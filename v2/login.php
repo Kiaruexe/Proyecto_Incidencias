@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (isset($_SESSION['email'])) {
-    header("Location: ../v2/homes/homeAdmin.php");
+    header("Location: ../v2/home.php");
     exit();
 }
 ?>
@@ -103,7 +103,7 @@ if (isset($_SESSION['email'])) {
                         $_SESSION['email']     = $usuario['correo'];
                         $_SESSION['idUsuario'] = $usuario['idUsuarios']; 
 
-                        header("Location: ../v2/homes/homeAdmin.php");
+                        header("Location: ../v2/home.php");
                         exit();
                     } else {
                         echo "<p style='color:red;'>Contraseña incorrecta.</p>";

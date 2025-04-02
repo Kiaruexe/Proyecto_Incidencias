@@ -1,16 +1,15 @@
 <?php
 try {
     $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
-
     $sqlUsuarios = "SELECT idUsuarios, usuario,
                            cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
                            cp1, provincia1, localidad1, direccion1,
                            cp2, provincia2, localidad2, direccion2
-                    FROM Usuarios";
+                    FROM Usuarios
+                    WHERE permiso = 'cliente'";
     $stmtUsr = $bd->prepare($sqlUsuarios);
     $stmtUsr->execute();
     $listaUsuarios = $stmtUsr->fetchAll();
-
 } catch (PDOException $e) {
     echo "<p style='color:red;'>Error al cargar usuarios: " . $e->getMessage() . "</p>";
     $listaUsuarios = [];
@@ -47,13 +46,11 @@ if (isset($_POST['registrar'])) {
     } else {
         try {
             $bdEquipos = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
-
             $sqlInsert = "INSERT INTO Equipos (
                 numEquipo, fechaAlta, tipoEquipo, marca, modelo, procesador, memoria, disco, tipo,
                 placa, serie, ubicacion, costo, sistema, observaciones, tipoMantenimiento,
                 cp, provincia, localidad, direccion, idUsuario
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
             $stmtEq = $bdEquipos->prepare($sqlInsert);
             $stmtEq->execute([
                 $numEquipo,
@@ -78,7 +75,6 @@ if (isset($_POST['registrar'])) {
                 $direccion,
                 $idUsuario
             ]);
-
             echo "<p style='color:green;'>Equipo registrado con éxito.</p>";
         } catch (PDOException $e) {
             echo "<p style='color:red;'>Error al registrar equipo: " . $e->getMessage() . "</p>";
@@ -98,7 +94,6 @@ if (isset($_POST['registrar'])) {
         const selectUser = document.getElementById('idUsuario');
         const selectedOption = selectUser.options[selectUser.selectedIndex];
         const dirType = document.getElementById('tipoDireccion').value;
-
         if (!selectedOption || selectedOption.value === "") {
           document.getElementById('cp').value = "";
           document.getElementById('provincia').value = "";
@@ -106,27 +101,19 @@ if (isset($_POST['registrar'])) {
           document.getElementById('direccion').value = "";
           return;
         }
-
         const cpFiscal = selectedOption.getAttribute('data-cpfiscal') || "";
         const provinciaFiscal = selectedOption.getAttribute('data-provinciafiscal') || "";
         const localidadFiscal = selectedOption.getAttribute('data-localidadfiscal') || "";
         const direccionFiscal = selectedOption.getAttribute('data-direccionfiscal') || "";
-
         const cp1 = selectedOption.getAttribute('data-cp1') || "";
         const provincia1 = selectedOption.getAttribute('data-provincia1') || "";
         const localidad1 = selectedOption.getAttribute('data-localidad1') || "";
         const direccion1 = selectedOption.getAttribute('data-direccion1') || "";
-
         const cp2 = selectedOption.getAttribute('data-cp2') || "";
         const provincia2 = selectedOption.getAttribute('data-provincia2') || "";
         const localidad2 = selectedOption.getAttribute('data-localidad2') || "";
         const direccion2 = selectedOption.getAttribute('data-direccion2') || "";
-
-        let cpValue = "";
-        let provinciaValue = "";
-        let localidadValue = "";
-        let direccionValue = "";
-
+        let cpValue = "", provinciaValue = "", localidadValue = "", direccionValue = "";
         if (dirType === "fiscal") {
           cpValue = cpFiscal;
           provinciaValue = provinciaFiscal;
@@ -143,75 +130,138 @@ if (isset($_POST['registrar'])) {
           localidadValue = localidad2;
           direccionValue = direccion2;
         }
-
         document.getElementById('cp').value = cpValue;
         document.getElementById('provincia').value = provinciaValue;
         document.getElementById('localidad').value = localidadValue;
         document.getElementById('direccion').value = direccionValue;
       }
+
+      function actualizarCampos() {
+        const tipoEquipo = document.getElementsByName('tipoEquipo')[0].value;
+        const grupos = [
+          'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador',
+          'grupo-memoria', 'grupo-disco', 'grupo-observaciones', 'grupo-costo', 'grupo-sistema',
+          'grupo-ubicacion', 'grupo-pantalla', 'grupo-tipo'
+        ];
+        grupos.forEach(function(id) {
+          const elem = document.getElementById(id);
+          if (elem) {
+            elem.style.display = 'none';
+          }
+        });
+        if (tipoEquipo === "pc") {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador', 'grupo-memoria', 'grupo-disco', 'grupo-observaciones', 'grupo-costo', 'grupo-sistema', 'grupo-ubicacion'].forEach(function(id) {
+            document.getElementById(id).style.display = 'block';
+          });
+        } else if (tipoEquipo === "portatil") {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-procesador', 'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones', 'grupo-costo', 'grupo-sistema', 'grupo-ubicacion'].forEach(function(id) {
+            document.getElementById(id).style.display = 'block';
+          });
+        } else if (tipoEquipo === "impresora") {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+            document.getElementById(id).style.display = 'block';
+          });
+        } else if (tipoEquipo === "monitor") {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+            document.getElementById(id).style.display = 'block';
+          });
+        } else if (tipoEquipo === "otro") {
+          ['grupo-tipo', 'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+            document.getElementById(id).style.display = 'block';
+          });
+        }
+      }
     </script>
 </head>
-<body>
+<body onload="actualizarCampos()">
 <h1>Registrar nuevo equipo</h1>
 <form method="post" action="">
-    <label>numEquipo:</label><br>
-    <input type="text" name="numEquipo" required><br><br>
+    <label>numEquipo:</label><br/>
+    <input type="text" name="numEquipo" required><br/><br/>
 
-    <label>Tipo de Equipo:</label><br>
-    <select name="tipoEquipo" required>
+    <label>Tipo de Equipo:</label><br/>
+    <select name="tipoEquipo" onchange="actualizarCampos()" required>
         <option value="">-- Seleccione --</option>
         <option value="pc">PC</option>
         <option value="portatil">Portátil</option>
         <option value="impresora">Impresora</option>
-        <option value="tablet">Tablet</option>
+        <option value="monitor">Monitor</option>
         <option value="otro">Otro</option>
-    </select><br><br>
+    </select><br/><br/>
 
-    <label>Marca:</label><br>
-    <input type="text" name="marca"><br><br>
+    <div id="grupo-marca" style="display:none;">
+      <label>Marca:</label><br/>
+      <input type="text" name="marca"><br/><br/>
+    </div>
 
-    <label>Modelo:</label><br>
-    <input type="text" name="modelo"><br><br>
+    <div id="grupo-modelo" style="display:none;">
+      <label>Modelo:</label><br/>
+      <input type="text" name="modelo"><br/><br/>
+    </div>
 
-    <h3>Especificaciones Técnicas</h3>
-    <label>Procesador:</label><br>
-    <input type="text" name="procesador"><br><br>
+    <div id="grupo-serie" style="display:none;">
+      <label>Serie:</label><br/>
+      <input type="text" name="serie"><br/><br/>
+    </div>
 
-    <label>Memoria:</label><br>
-    <input type="text" name="memoria"><br><br>
+    <div id="grupo-placa" style="display:none;">
+      <label>Placa:</label><br/>
+      <input type="text" name="placa"><br/><br/>
+    </div>
 
-    <label>Disco:</label><br>
-    <input type="text" name="disco"><br><br>
+    <div id="grupo-procesador" style="display:none;">
+      <label>Procesador:</label><br/>
+      <input type="text" name="procesador"><br/><br/>
+    </div>
 
-    <label>Tipo (para indicar otro tipo, ej. tablet):</label><br>
-    <input type="text" name="tipo"><br><br>
+    <div id="grupo-memoria" style="display:none;">
+      <label>Memoria:</label><br/>
+      <input type="text" name="memoria"><br/><br/>
+    </div>
 
-    <label>Placa:</label><br>
-    <input type="text" name="placa"><br><br>
+    <div id="grupo-disco" style="display:none;">
+      <label>Disco:</label><br/>
+      <input type="text" name="disco"><br/><br/>
+    </div>
 
-    <label>Serie:</label><br>
-    <input type="text" name="serie"><br><br>
+    <div id="grupo-pantalla" style="display:none;">
+      <label>Pantalla:</label><br/>
+      <input type="text" name="pantalla"><br/><br/>
+    </div>
 
-    <label>Ubicación:</label><br>
-    <input type="text" name="ubicacion"><br><br>
+    <div id="grupo-observaciones" style="display:none;">
+      <label>Observaciones:</label><br/>
+      <textarea name="observaciones"></textarea><br/><br/>
+    </div>
 
-    <label>Costo:</label><br>
-    <input type="number" step="0.01" name="costo"><br><br>
+    <div id="grupo-costo" style="display:none;">
+      <label>Costo:</label><br>
+      <input type="number" step="0.01" name="costo"><br/><br/>
+    </div>
 
-    <label>Sistema:</label><br>
-    <input type="text" name="sistema"><br><br>
+    <div id="grupo-sistema" style="display:none;">
+      <label>Sistema:</label><br>
+      <input type="text" name="sistema"><br/><br/>
+    </div>
 
-    <label>Observaciones:</label><br>
-    <textarea name="observaciones"></textarea><br><br>
+    <div id="grupo-ubicacion" style="display:none;">
+      <label>Ubicación:</label><br/>
+      <input type="text" name="ubicacion"><br/><br/>
+    </div>
 
-    <label>Tipo de Mantenimiento:</label><br>
+    <div id="grupo-tipo" style="display:none;">
+      <label>Tipo (Especifique):</label><br/>
+      <input type="text" name="tipo"><br/><br/>
+    </div>
+
+    <label>Tipo de Mantenimiento:</label><br/>
     <select name="tipoMantenimiento" required>
         <option value="">-- Seleccione --</option>
         <option value="mantenimientoCompleto">Completo</option>
         <option value="mantenimientoManoObra">Mano de Obra</option>
-    </select><br><br>
+    </select><br/><br/>
 
-    <label>Seleccione el Usuario:</label><br>
+    <label>Seleccione el Usuario:</label><br/>
     <select id="idUsuario" name="idUsuario" onchange="autocompletarDireccion()" required>
         <option value="">-- Selecciona un usuario --</option>
         <?php foreach ($listaUsuarios as $usr): ?>
@@ -234,27 +284,27 @@ if (isset($_POST['registrar'])) {
             </option>
         <?php endforeach; ?>
     </select>
-    <br><br>
+    <br/><br/>
 
-    <label>Tipo de dirección:</label><br>
+    <label>Tipo de dirección:</label><br/>
     <select id="tipoDireccion" onchange="autocompletarDireccion()" required>
         <option value="fiscal">Fiscal</option>
         <option value="1">Dirección 1</option>
         <option value="2">Dirección 2</option>
     </select>
-    <br><br>
+    <br/><br/>
 
-    <label>CP:</label><br>
-    <input type="number" id="cp" name="cp" required><br><br>
+    <label>CP:</label><br/>
+    <input type="number" id="cp" name="cp" required><br/><br/>
 
-    <label>Provincia:</label><br>
-    <input type="text" id="provincia" name="provincia" required><br><br>
+    <label>Provincia:</label><br/>
+    <input type="text" id="provincia" name="provincia" required><br/><br/>
 
-    <label>Localidad:</label><br>
-    <input type="text" id="localidad" name="localidad" required><br><br>
+    <label>Localidad:</label><br/>
+    <input type="text" id="localidad" name="localidad" required><br/><br/>
 
-    <label>Dirección:</label><br>
-    <input type="text" id="direccion" name="direccion" required><br><br>
+    <label>Dirección:</label><br/>
+    <input type="text" id="direccion" name="direccion" required><br/><br/>
 
     <input type="submit" name="registrar" value="Registrar Equipo">
 </form>
