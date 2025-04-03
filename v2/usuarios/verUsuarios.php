@@ -2,7 +2,7 @@
 try {
     $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
 
-    $filtroPermiso = isset($_GET['permiso']) ? $_GET['permiso'] : '';
+    $filtroPermiso = isset($_GET['permiso']) ? $_GET['permiso'] : 'todos'; // Valor por defecto: 'todos'
     if ($filtroPermiso && $filtroPermiso !== 'todos') {
         $query = $bd->prepare("SELECT * FROM Usuarios WHERE permiso = ?");
         $query->execute([$filtroPermiso]);
@@ -46,18 +46,20 @@ try {
             <th>Usuario</th>
             <th>Correo</th>
             <th>Permiso</th>
-            <th>CP Fiscal</th>
-            <th>Provincia Fiscal</th>
-            <th>Localidad Fiscal</th>
-            <th>Direccion Fiscal</th>
-            <th>CP1</th>
-            <th>Provincia1</th>
-            <th>Localidad1</th>
-            <th>Direccion1</th>
-            <th>CP2</th>
-            <th>Provincia2</th>
-            <th>Localidad2</th>
-            <th></th>Direccion2</th>
+            <?php if($filtroPermiso=='cliente' || $filtroPermiso=='todos'): ?>
+                <th>CP Fiscal</th>
+                <th>Provincia Fiscal</th>
+                <th>Localidad Fiscal</th>
+                <th>Direccion Fiscal</th>
+                <th>CP1</th>
+                <th>Provincia1</th>
+                <th>Localidad1</th>
+                <th>Direccion1</th>
+                <th>CP2</th>
+                <th>Provincia2</th>
+                <th>Localidad2</th>
+                <th>Direccion2</th>
+            <?php endif; ?>
         </tr>
         <?php while ($row = $query->fetch()): ?>
             <tr>
@@ -65,18 +67,20 @@ try {
                 <td><?php echo $row['usuario']; ?></td>
                 <td><?php echo $row['correo']; ?></td>
                 <td><?php echo $row['permiso']; ?></td>
-                <td><?php echo $row['cpFiscal']; ?></td>
-                <td><?php echo $row['provinciaFiscal']; ?></td>
-                <td><?php echo $row['localidadFiscal']; ?></td>
-                <td><?php echo $row['direccionFiscal']; ?></td>
-                <td><?php echo $row['cp1']; ?></td>
-                <td><?php echo $row['provincia1']; ?></td>
-                <td><?php echo $row['localidad1']; ?></td>
-                <td><?php echo $row['direccion1']; ?></td>
-                <td><?php echo $row['cp2']; ?></td>
-                <td><?php echo $row['provincia2']; ?></td>
-                <td><?php echo $row['localidad2']; ?></td>
-                <td><?php echo $row['direccion2']; ?></td>
+                <?php if($filtroPermiso=='cliente' || $filtroPermiso=='todos'): ?>
+                    <td><?php echo $row['cpFiscal']; ?></td>
+                    <td><?php echo $row['provinciaFiscal']; ?></td>
+                    <td><?php echo $row['localidadFiscal']; ?></td>
+                    <td><?php echo $row['direccionFiscal']; ?></td>
+                    <td><?php echo $row['cp1']; ?></td>
+                    <td><?php echo $row['provincia1']; ?></td>
+                    <td><?php echo $row['localidad1']; ?></td>
+                    <td><?php echo $row['direccion1']; ?></td>
+                    <td><?php echo $row['cp2']; ?></td>
+                    <td><?php echo $row['provincia2']; ?></td>
+                    <td><?php echo $row['localidad2']; ?></td>
+                    <td><?php echo $row['direccion2']; ?></td>
+                <?php endif; ?>
             </tr>
         <?php endwhile; ?>
     </table>
