@@ -16,68 +16,97 @@ try {
 }
 
 if (isset($_POST['registrar'])) {
-    $numEquipo         = $_POST['numEquipo']         ?? null;
     $fechaAlta         = date('Y-m-d'); 
-    $tipoEquipo        = $_POST['tipoEquipo']        ?? null;
-    $marca             = $_POST['marca']             ?? null;
-    $modelo            = $_POST['modelo']            ?? null;
-    $procesador        = $_POST['procesador']        ?? null;
-    $memoria           = $_POST['memoria']           ?? null;
-    $disco             = $_POST['disco']             ?? null;
-    $tipo              = $_POST['tipo']              ?? null; 
-    $placa             = $_POST['placa']             ?? null;
-    $serie             = $_POST['serie']             ?? null;
-    $ubicacion         = $_POST['ubicacion']         ?? null;
-    $costo             = $_POST['costo']             ?? null;
-    $sistema           = $_POST['sistema']           ?? null;
-    $observaciones     = $_POST['observaciones']     ?? null;
-    $tipoMantenimiento = $_POST['tipoMantenimiento'] ?? null;
-    $cp                = $_POST['cp']                ?? null;
-    $provincia         = $_POST['provincia']         ?? null;
-    $localidad         = $_POST['localidad']         ?? null;
-    $direccion         = $_POST['direccion']         ?? null;
-    $idUsuario         = $_POST['idUsuario']         ?? null;
-
-    if (
-        !$numEquipo || !$tipoEquipo || !$tipoMantenimiento ||
-        !$cp || !$provincia || !$localidad || !$direccion || !$idUsuario
-    ) {
-        echo "<p style='color:red;'>Por favor, complete los campos obligatorios.</p>";
+    $tipoEquipoArray   = $_POST['tipoEquipo'] ?? [];
+    if(empty($tipoEquipoArray)){
+        echo "<p style='color:red;'>Por favor, seleccione al menos un tipo de equipo.</p>";
     } else {
-        try {
-            $bdEquipos = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
-            $sqlInsert = "INSERT INTO Equipos (
-                numEquipo, fechaAlta, tipoEquipo, marca, modelo, procesador, memoria, disco, tipo,
-                placa, serie, ubicacion, costo, sistema, observaciones, tipoMantenimiento,
-                cp, provincia, localidad, direccion, idUsuario
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $stmtEq = $bdEquipos->prepare($sqlInsert);
-            $stmtEq->execute([
-                $numEquipo,
-                $fechaAlta,
-                $tipoEquipo,
-                $marca,
-                $modelo,
-                $procesador,
-                $memoria,
-                $disco,
-                $tipo,
-                $placa,
-                $serie,
-                $ubicacion,
-                $costo,
-                $sistema,
-                $observaciones,
-                $tipoMantenimiento,
-                $cp,
-                $provincia,
-                $localidad,
-                $direccion,
-                $idUsuario
-            ]);
-            echo "<p style='color:green;'>Equipo registrado con éxito.</p>";
-        } catch (PDOException $e) {
-            echo "<p style='color:red;'>Error al registrar equipo: " . $e->getMessage() . "</p>";
+        // Usamos el primer valor seleccionado para el INSERT en "tipoEquipo"
+        $tipoEquipoPrim = $tipoEquipoArray[0];
+    
+        $marca             = $_POST['marca']             ?? null;
+        $modelo            = $_POST['modelo']            ?? null;
+        $procesador        = $_POST['procesador']        ?? null;
+        $memoria           = $_POST['memoria']           ?? null;
+        $disco             = $_POST['disco']             ?? null;
+        $tipo              = $_POST['tipo']              ?? null; 
+        $placa             = $_POST['placa']             ?? null;
+        $serie             = $_POST['serie']             ?? null;
+        $ubicacion         = $_POST['ubicacion']         ?? null;
+        $costo             = $_POST['costo']             ?? null;
+        $sistema           = $_POST['sistema']           ?? null;
+        $pantalla          = $_POST['pantalla']          ?? null;
+        $observaciones     = $_POST['observaciones']     ?? null;
+        $tipoMantenimiento = $_POST['tipoMantenimiento'] ?? null;
+        $cp                = $_POST['cp']                ?? null;
+        $provincia         = $_POST['provincia']         ?? null;
+        $localidad         = $_POST['localidad']         ?? null;
+        $direccion         = $_POST['direccion']         ?? null;
+        $idUsuario         = $_POST['idUsuario']         ?? null;
+        
+        if (
+            !$tipoEquipoPrim || !$tipoMantenimiento ||
+            !$cp || !$provincia || !$localidad || !$direccion || !$idUsuario
+        ) {
+            echo "<p style='color:red;'>Por favor, complete los campos obligatorios.</p>";
+        } else {
+            try {
+                $bdEquipos = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
+                // Se obtiene el contador genérico (total de registros + 1)
+                $stmtCount = $bdEquipos->query("SELECT COUNT(*) AS total FROM Equipos");
+                $row = $stmtCount->fetch(PDO::FETCH_ASSOC);
+                $counter = $row['total'] + 1;
+                // Se determina el prefijo según el primer tipo seleccionado
+                switch ($tipoEquipoPrim) {
+                    case 'pc':       $prefix = "PC";   break;
+                    case 'portatil': $prefix = "port"; break;
+                    case 'impresora':$prefix = "imp";  break;
+                    case 'monitor':  $prefix = "mon";  break;
+                    case 'otro':     $prefix = "ot";   break;
+                    case 'teclado':  $prefix = "tecl"; break;
+                    case 'raton':    $prefix = "rat";  break;
+                    case 'router':   $prefix = "rou";  break;
+                    case 'sw':       $prefix = "sw";   break;
+                    case 'sai':      $prefix = "sai";  break;
+                    default:         $prefix = "EQ";   break;
+                }
+                // Se genera el código con 3 dígitos (ej. port001)
+                $numEquipo = $prefix . sprintf("%03d", $counter);
+
+                $sqlInsert = "INSERT INTO Equipos (
+                    numEquipo, fechaAlta, tipoEquipo, marca, modelo, procesador, memoria, disco, tipo,
+                    placa, serie, ubicacion, costo, sistema, pantalla, observaciones, tipoMantenimiento,
+                    cp, provincia, localidad, direccion, idUsuario
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmtEq = $bdEquipos->prepare($sqlInsert);
+                $stmtEq->execute([
+                    $numEquipo,
+                    $fechaAlta,
+                    $tipoEquipoPrim, // Se guarda solo el primer valor seleccionado
+                    $marca,
+                    $modelo,
+                    $procesador,
+                    $memoria,
+                    $disco,
+                    $tipo,
+                    $placa,
+                    $serie,
+                    $ubicacion,
+                    $costo,
+                    $sistema,
+                    $pantalla,
+                    $observaciones,
+                    $tipoMantenimiento,
+                    $cp,
+                    $provincia,
+                    $localidad,
+                    $direccion,
+                    $idUsuario
+                ]);
+                echo "<p style='color:green;'>Equipo ($numEquipo) registrado con éxito.</p>";
+            } catch (PDOException $e) {
+                echo "<p style='color:red;'>Error al registrar equipo: " . $e->getMessage() . "</p>";
+            }
         }
     }
 }
@@ -135,38 +164,49 @@ if (isset($_POST['registrar'])) {
         document.getElementById('localidad').value = localidadValue;
         document.getElementById('direccion').value = direccionValue;
       }
-
       function actualizarCampos() {
-        const tipoEquipo = document.getElementsByName('tipoEquipo')[0].value;
+        const select = document.getElementsByName('tipoEquipo[]')[0];
+        let values = Array.from(select.selectedOptions).map(opt => opt.value);
         const grupos = [
           'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador',
-          'grupo-memoria', 'grupo-disco', 'grupo-observaciones', 'grupo-costo', 'grupo-sistema',
-          'grupo-ubicacion', 'grupo-pantalla', 'grupo-tipo'
+          'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones',
+          'grupo-costo', 'grupo-sistema', 'grupo-ubicacion', 'grupo-tipo'
         ];
         grupos.forEach(function(id) {
           const elem = document.getElementById(id);
-          if (elem) {
-            elem.style.display = 'none';
-          }
+          if (elem) { elem.style.display = 'none'; }
         });
+        let tipoEquipo = values.length ? values[0] : "";
         if (tipoEquipo === "pc") {
-          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador', 'grupo-memoria', 'grupo-disco', 'grupo-observaciones', 'grupo-costo', 'grupo-sistema', 'grupo-ubicacion'].forEach(function(id) {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa',
+           'grupo-procesador', 'grupo-memoria', 'grupo-disco', 'grupo-observaciones',
+           'grupo-costo', 'grupo-sistema', 'grupo-ubicacion'].forEach(function(id) {
             document.getElementById(id).style.display = 'block';
           });
         } else if (tipoEquipo === "portatil") {
-          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-procesador', 'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones', 'grupo-costo', 'grupo-sistema', 'grupo-ubicacion'].forEach(function(id) {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-procesador',
+           'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones',
+           'grupo-costo', 'grupo-sistema', 'grupo-ubicacion'].forEach(function(id) {
             document.getElementById(id).style.display = 'block';
           });
         } else if (tipoEquipo === "impresora") {
-          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie',
+           'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
             document.getElementById(id).style.display = 'block';
           });
         } else if (tipoEquipo === "monitor") {
-          ['grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie',
+           'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
             document.getElementById(id).style.display = 'block';
           });
         } else if (tipoEquipo === "otro") {
-          ['grupo-tipo', 'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+          ['grupo-tipo', 'grupo-marca', 'grupo-modelo', 'grupo-serie',
+           'grupo-observaciones', 'grupo-ubicacion', 'grupo-costo'].forEach(function(id) {
+            document.getElementById(id).style.display = 'block';
+          });
+        } else if (["teclado", "raton", "router", "sw", "sai"].indexOf(tipoEquipo) > -1) {
+          ['grupo-marca', 'grupo-modelo', 'grupo-serie',
+           'grupo-observaciones', 'grupo-costo', 'grupo-ubicacion'].forEach(function(id) {
             document.getElementById(id).style.display = 'block';
           });
         }
@@ -176,17 +216,19 @@ if (isset($_POST['registrar'])) {
 <body onload="actualizarCampos()">
 <h1>Registrar nuevo equipo</h1>
 <form method="post" action="">
-    <label>numEquipo:</label><br/>
-    <input type="text" name="numEquipo" required><br/><br/>
-
-    <label>Tipo de Equipo:</label><br/>
-    <select name="tipoEquipo" onchange="actualizarCampos()" required>
+    <label>Tipo de Equipo (puedes seleccionar varias):</label><br/>
+    <select name="tipoEquipo[]" multiple onchange="actualizarCampos()" required>
         <option value="">-- Seleccione --</option>
         <option value="pc">PC</option>
         <option value="portatil">Portátil</option>
         <option value="impresora">Impresora</option>
         <option value="monitor">Monitor</option>
         <option value="otro">Otro</option>
+        <option value="teclado">Teclado</option>
+        <option value="raton">Ratón</option>
+        <option value="router">Router</option>
+        <option value="sw">Switch</option>
+        <option value="sai">SAI</option>
     </select><br/><br/>
 
     <div id="grupo-marca" style="display:none;">
@@ -235,12 +277,12 @@ if (isset($_POST['registrar'])) {
     </div>
 
     <div id="grupo-costo" style="display:none;">
-      <label>Costo:</label><br>
+      <label>Costo:</label><br/>
       <input type="number" step="0.01" name="costo"><br/><br/>
     </div>
 
     <div id="grupo-sistema" style="display:none;">
-      <label>Sistema:</label><br>
+      <label>Sistema:</label><br/>
       <input type="text" name="sistema"><br/><br/>
     </div>
 
