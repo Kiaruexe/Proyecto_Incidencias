@@ -120,6 +120,11 @@ try {
             <option value="impresora" <?= $filtroTipoEquipo=='impresora' ? 'selected' : ''; ?>>Impresora</option>
             <option value="monitor" <?= $filtroTipoEquipo=='monitor' ? 'selected' : ''; ?>>Monitor</option>
             <option value="otro" <?= $filtroTipoEquipo=='otro' ? 'selected' : ''; ?>>Otro</option>
+            <option value="teclado" <?= $filtroTipoEquipo=='teclado' ? 'selected' : ''; ?>>Teclado</option>
+            <option value="raton" <?= $filtroTipoEquipo=='raton' ? 'selected' : ''; ?>>Ratón</option>
+            <option value="router" <?= $filtroTipoEquipo=='router' ? 'selected' : ''; ?>>Router</option>
+            <option value="sw" <?= $filtroTipoEquipo=='sw' ? 'selected' : ''; ?>>Switch</option>
+            <option value="sai" <?= $filtroTipoEquipo=='sai' ? 'selected' : ''; ?>>SAI</option>
         </select>
 
         <input type="text" name="tipoMantenimiento" placeholder="Tipo de Mantenimiento" value="<?= ($filtroMantenimiento); ?>">
