@@ -131,7 +131,7 @@ try {
         <input type="text" name="cp" placeholder="Código Postal" value="<?= ($filtroCP); ?>">
         <input type="text" name="provincia" placeholder="Provincia" value="<?= ($filtroProvincia); ?>">
         <input type="text" name="localidad" placeholder="Localidad" value="<?= ($filtroLocalidad); ?>">
-        <input type="text" name="usuario" placeholder="Usuario Responsable" value="<?= ($filtroUsuario); ?>">
+        <input type="text" name="usuario" placeholder="Nombre de cliente" value="<?= ($filtroUsuario); ?>">
 
         <label for="ordenarPor">Ordenar por:</label>
         <select name="ordenarPor">
@@ -159,14 +159,13 @@ try {
             <th>Provincia</th>
             <th>Localidad</th>
             <th>Dirección</th>
-            <th>Usuario Responsable</th>
+            <th>Cliente</th>
             <th>Marca</th>
             <th>Modelo</th>
             <th>Serie</th>
             <th>Observaciones</th>
             <th>Ubicación</th>
             <th>Costo</th>
-            <th>Acciones</th>
         </tr>
 
         <?php while ($row = $query->fetch()): ?>
@@ -185,7 +184,6 @@ try {
                 <td><?= ($row['observaciones']); ?></td>
                 <td><?= ($row['ubicacion']); ?></td>
                 <td><?= ($row['costo']); ?></td>
-                <td><button>Crear Incidencia</button></td>
             </tr>
         <?php endwhile; ?>
     </table>
