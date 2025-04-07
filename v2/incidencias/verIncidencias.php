@@ -1,45 +1,68 @@
 <?php
-// Iniciar sesión
+// Inicia la sesión y verifica si el usuario está autenticado
 session_start();
-
-// Verificar si el usuario ha iniciado sesión, si no, redirigirlo al login
-if (!isset($_SESSION['idUsuario'])) {
-    header("Location: ../login.php");
-    exit;
+if (!isset($_SESSION["idUsuario"])) {
+  header("Location: ../login.php"); // Redirige al login si no hay sesión
+  exit;
 }
 
 try {
-    // Conexión a la base de datos utilizando PDO
-    $bd = new PDO(
-        'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 
-        'Mapapli', 
-        '9R%d5cf62'
-    );
-    
-    // Obtener los datos del usuario actual desde la base de datos
-    $query = $bd->prepare("SELECT * FROM Usuarios WHERE idUsuarios = ?");
-    $query->execute([$_SESSION['idUsuario']]);
-    $userRow = $query->fetch();
-
-    // Obtener el tipo de permiso del usuario
-    $permiso = $userRow['permiso'];
+  // Conexión a la base de datos y obtención de datos del usuario autenticado
+  $bd = new PDO(
+    'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8',
+    'Mapapli',
+    '9R%d5cf62'
+  );
+  // Se obtiene la información del usuario mediante su ID
+  $query = $bd->prepare("SELECT * FROM Usuarios WHERE idUsuarios = ?");
+  $query->execute([$_SESSION['idUsuario']]);
+  $userRow = $query->fetch();
+  // Se normaliza el permiso a minúsculas
+  $permiso = strtolower($userRow['permiso']);
 } catch (PDOException $e) {
-    // Manejo de errores en la conexión a la base de datos
-    echo "Error: " . $e->getMessage();
-    exit;
+  echo "Error: " . $e->getMessage(); // Muestra error de conexión
+  exit;
 }
 
-// Definir los campos permitidos para el filtrado de incidencias
+/* 
+  Para usuarios con permiso 'recepcion', 'admin' o 'jefetecnico' se requiere seleccionar un cliente.
+  Si se envía el formulario de selección, se redirige a este mismo archivo con el parámetro GET 'clienteElegido'
+  y se conserva el contenido previamente escrito en el textarea "incidencia".
+*/
+$incidenciaPrev = $_POST['incidencia'] ?? '';
+if (($permiso == 'recepcion' || $permiso == 'admin' || $permiso == 'jefetecnico') && isset($_POST['elegirCliente'])) {
+  $clienteElegido = $_POST['cliente'] ?? '';
+  if (!empty($clienteElegido)) {
+    header("Location: " . $_SERVER['PHP_SELF'] . "?clienteElegido=" . urlencode($clienteElegido) . "&incidenciaPrev=" . urlencode($incidenciaPrev));
+    exit;
+  }
+}
+
+// Para usuarios con permiso 'cliente', se verifica que tengan equipos asignados
+$tieneEquipos = false;
+if ($permiso == 'cliente') {
+  try {
+    $qEquipos = $bd->prepare("SELECT COUNT(*) FROM Equipos WHERE idUsuario = ?");
+    $qEquipos->execute([$_SESSION['idUsuario']]);
+    $numEquipos = $qEquipos->fetchColumn();
+    $tieneEquipos = $numEquipos > 0;
+  } catch (PDOException $e) {
+    echo "<p style='color:red;'>Error verificando equipos.</p>";
+  }
+}
+
+// Definir los campos permitidos para el filtrado, usando el nombre completo de la tabla
 $allowedFields = [
-    'idIncidencias'   => 'idIncidencias',
-    'fecha'           => 'fecha',
-    'tecnicoAsignado' => 'tecnicoAsignado',
-    'incidencia'      => 'incidencia',
-    'idUsuario'       => 'idUsuario',
-    'numEquipo'       => 'numEquipo'
+    'idIncidencias'   => 'Incidencias.idIncidencias',
+    'fecha'           => 'Incidencias.fecha',
+    'tecnicoAsignado' => 'Incidencias.tecnicoAsignado',
+    'incidencia'      => 'Incidencias.incidencia',
+    'usuario'         => 'Usuarios.usuario',
+    'numEquipo'       => 'Incidencias.numEquipo',
+    'estado'          => 'Incidencias.estado'
 ];
 
-// Obtener el campo y el valor de filtrado desde la URL
+// Obtener el campo y el valor del filtro desde la URL
 $filterField = isset($_GET['filter_field']) && array_key_exists($_GET['filter_field'], $allowedFields)
     ? $allowedFields[$_GET['filter_field']]
     : '';
@@ -47,27 +70,42 @@ $filterValue = isset($_GET['filter_value']) ? trim($_GET['filter_value']) : '';
 $filterClause = "";
 $params = [];
 
-// Construcción de la condición de filtrado si se ha seleccionado un campo válido y un valor
+// Si se ha seleccionado un campo y se ha introducido un valor, se hace la comparación exacta
 if ($filterField !== '' && $filterValue !== '') {
-    $filterClause = " AND $filterField LIKE ?";
-    $params[] = '%' . $filterValue . '%'; // Se usa LIKE para permitir coincidencias parciales
+    $filterClause = " AND $filterField = ?";
+    $params[] = $filterValue;
+}
+
+// Para mayor control: Solo 'admin' y 'jefetecnico' pueden filtrar por estado
+if ($filterField === 'Incidencias.estado' && !in_array($permiso, ['admin', 'jefetecnico'])) {
+    $filterField = '';
+    $filterClause = '';
+    $params = [];
 }
 
 // Construcción de la consulta según el permiso del usuario
 $sql = "";
 if ($permiso == 'admin' || $permiso == 'recepcion' || $permiso == 'jefetecnico') {
-    // Administradores, recepción y jefe técnico pueden ver todas las incidencias
-    $sql = "SELECT * FROM Incidencias WHERE 1=1" . $filterClause;
+    // Estos roles pueden ver todas las incidencias
+    $sql = "SELECT Incidencias.*, Usuarios.usuario 
+            FROM Incidencias 
+            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios 
+            WHERE 1=1" . $filterClause;
 } elseif ($permiso == 'cliente') {
-    // Los clientes solo pueden ver sus propias incidencias
-    $sql = "SELECT * FROM Incidencias WHERE idUsuario = ? " . $filterClause;
-    array_unshift($params, $_SESSION['idUsuario']); // Agregar el ID del usuario a los parámetros
+    // Los clientes solo ven sus propias incidencias
+    $sql = "SELECT Incidencias.*, Usuarios.usuario 
+            FROM Incidencias 
+            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios 
+            WHERE Incidencias.idUsuario = ?" . $filterClause;
+    array_unshift($params, $_SESSION['idUsuario']);
 } elseif ($permiso == 'tecnico') {
-    // Los técnicos solo ven incidencias inactivas que les han sido asignadas
-    $sql = "SELECT * FROM Incidencias WHERE estado = 0 AND tecnicoAsignado = ? " . $filterClause;
-    array_unshift($params, $userRow['usuario']); // Agregar el nombre de usuario del técnico
+    // Los técnicos ven incidencias inactivas asignadas a ellos (comparando con su nombre de usuario)
+    $sql = "SELECT Incidencias.*, Usuarios.usuario 
+            FROM Incidencias 
+            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios 
+            WHERE Incidencias.estado = 0 AND Incidencias.tecnicoAsignado = ?" . $filterClause;
+    array_unshift($params, $userRow['usuario']);
 } else {
-    // Si el usuario no tiene un permiso válido, redirigirlo al login
     header("Location: ../login.php");
     exit;
 }
@@ -77,7 +115,6 @@ try {
     $stmt = $bd->prepare($sql);
     $stmt->execute($params);
 } catch (PDOException $e) {
-    // Manejo de errores en la consulta
     echo "Error en la consulta: " . $e->getMessage();
     exit;
 }
@@ -87,7 +124,6 @@ try {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Incidencias</title>
   <link rel="stylesheet" href="../css/style.css">
   <style>
@@ -111,21 +147,22 @@ try {
 </head>
 <body>
   <h1>Lista de Incidencias</h1>
-  <p>Usuario ID: <?php echo ($_SESSION['idUsuario']); ?> - Tipo: <?php echo ($permiso); ?></p>
+  <p>Usuario: <?php echo htmlspecialchars($userRow['usuario']); ?> - Tipo: <?php echo htmlspecialchars($permiso); ?></p>
 
   <!-- Formulario de filtrado -->
   <form method="GET" action="">
     <label for="filter_field">Filtrar por:</label>
     <select name="filter_field" id="filter_field">
       <option value="">-- Seleccione --</option>
-      <option value="idIncidencias" <?php if($filterField=='idIncidencias') echo 'selected'; ?>>ID Incidencia</option>
-      <option value="fecha" <?php if($filterField=='fecha') echo 'selected'; ?>>Fecha</option>
-      <option value="tecnicoAsignado" <?php if($filterField=='tecnicoAsignado') echo 'selected'; ?>>Técnico Asignado</option>
-      <option value="incidencia" <?php if($filterField=='incidencia') echo 'selected'; ?>>Incidencia</option>
-      <option value="idUsuario" <?php if($filterField=='idUsuario') echo 'selected'; ?>>ID Usuario</option>
-      <option value="numEquipo" <?php if($filterField=='numEquipo') echo 'selected'; ?>>ID Equipo</option>
+      <option value="idIncidencias" <?php if($filterField=='Incidencias.idIncidencias') echo 'selected'; ?>>ID Incidencia</option>
+      <option value="fecha" <?php if($filterField=='Incidencias.fecha') echo 'selected'; ?>>Fecha</option>
+      <option value="tecnicoAsignado" <?php if($filterField=='Incidencias.tecnicoAsignado') echo 'selected'; ?>>Técnico Asignado</option>
+      <option value="incidencia" <?php if($filterField=='Incidencias.incidencia') echo 'selected'; ?>>Incidencia</option>
+      <option value="usuario" <?php if($filterField=='Usuarios.usuario') echo 'selected'; ?>>Cliente</option>
+      <option value="numEquipo" <?php if($filterField=='Incidencias.numEquipo') echo 'selected'; ?>>Nº Equipo</option>
+      <option value="estado" <?php if($filterField=='Incidencias.estado') echo 'selected'; ?>>Estado (1=Completo, 0=Incompleto)</option>
     </select>
-    <input type="text" name="filter_value" placeholder="Valor a buscar" value="<?php echo ($filterValue); ?>">
+    <input type="text" name="filter_value" placeholder="Valor a buscar" value="<?php echo htmlspecialchars($filterValue); ?>">
     <input type="submit" value="Filtrar">
     <a href="<?php echo $_SERVER['PHP_SELF']; ?>">Limpiar filtro</a>
   </form>
@@ -141,23 +178,23 @@ try {
         <th>Tiempo Desplazamiento</th>
         <th>Tiempo Intervención</th>
         <th>Tipo Financiación</th>
-        <th>ID Usuario</th>
-        <th>Num Equipo</th>
+        <th>Cliente</th>
+        <th>Nº Equipo</th>
         <th>Incidencia</th>
       </tr>
       <?php while ($row = $stmt->fetch()): ?>
         <tr>
-          <td><?php echo ($row['idIncidencias']); ?></td>
-          <td><?php echo ($row['fecha']); ?></td>
-          <td><?php echo $row['estado'] ? 'Activo' : 'Inactivo'; ?></td>
-          <td><?php echo ($row['tecnicoAsignado']); ?></td>
-          <td><?php echo ($row['observaciones']); ?></td>
-          <td><?php echo ($row['TDesplazamiento']); ?> min</td>
-          <td><?php echo ($row['TIntervencion']); ?> min</td>
-          <td><?php echo ($row['tipoFinanciacion']); ?></td>
-          <td><?php echo ($row['idUsuario']); ?></td>
-          <td><?php echo ($row['numEquipo']); ?></td>
-          <td><?php echo ($row['incidencia']); ?></td>
+          <td><?php echo htmlspecialchars($row['idIncidencias']); ?></td>
+          <td><?php echo htmlspecialchars($row['fecha']); ?></td>
+          <td><?php echo $row['estado'] ? 'Completo' : 'Incompleto'; ?></td>
+          <td><?php echo htmlspecialchars($row['tecnicoAsignado']); ?></td>
+          <td><?php echo htmlspecialchars($row['observaciones']); ?></td>
+          <td><?php echo htmlspecialchars($row['TDesplazamiento']); ?> min</td>
+          <td><?php echo htmlspecialchars($row['TIntervencion']); ?> min</td>
+          <td><?php echo htmlspecialchars($row['tipoFinanciacion']); ?></td>
+          <td><?php echo htmlspecialchars($row['usuario']); ?></td>
+          <td><?php echo htmlspecialchars($row['numEquipo']); ?></td>
+          <td><?php echo htmlspecialchars($row['incidencia']); ?></td>
         </tr>
       <?php endwhile; ?>
     </table>
