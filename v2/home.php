@@ -292,6 +292,7 @@ try {
                         <h2>Gestión de Usuarios</h2>
                         <div class="admin-section-buttons">
                             <a href="usuarios/crearUsuarios.php">Crear Usuarios</a>
+                            <a href="usuarios/modificarUsuarios.php">Modificar Usuarios</a>
                             <a href="usuarios/verUsuarios.php">Ver Usuarios</a>
                         </div>
                     </div>
