@@ -18,7 +18,7 @@ if (!isset($_GET['id'])) {
         $sql = "SELECT idUsuarios, usuario FROM Usuarios";
         $stmt = $bd->prepare($sql);
         $stmt->execute();
-        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $usuarios = $stmt->fetchAll();
     } catch (PDOException $e) {
         echo "<p style='color:red;'>Error al obtener usuarios: " . $e->getMessage() . "</p>";
         exit;
@@ -58,7 +58,7 @@ try {
     $sql = "SELECT * FROM Usuarios WHERE idUsuarios = ?";
     $stmt = $bd->prepare($sql);
     $stmt->execute([$idUsuarioModificar]);
-    $usuarioData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $usuarioData = $stmt->fetch();
     if (!$usuarioData) {
         echo "<p style='color:red;'>Usuario no encontrado.</p>";
         exit;

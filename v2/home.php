@@ -276,6 +276,7 @@ try {
                         <h2>Gestión de Equipos</h2>
                         <div class="admin-section-buttons">
                             <a href="equipos/crearEquipos.php">Crear Equipos</a>
+                            <a href="equipos/modificarEquipo.php">Modificar Equipos</a>
                             <a href="equipos/verEquipos.php">Ver Equipos</a>
                         </div>
                     </div>
