@@ -301,6 +301,8 @@ if (isset($_POST['registrar'])) {
         <option value="">-- Seleccione --</option>
         <option value="mantenimientoCompleto">Completo</option>
         <option value="mantenimientoManoObra">Mano de Obra</option>
+        <option value="mantenimientoFacturable">Facturable</option>
+        <option value="mantenimientoGarantia">Garantia</option>
     </select><br/><br/>
 
     <label>Seleccione el Usuario:</label><br/>
