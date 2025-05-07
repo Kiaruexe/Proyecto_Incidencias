@@ -84,6 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (empty($data['cp'])) {
         $errors['cp'] = 'Código postal requerido.';
+    } elseif (strlen($data['cp']) < 5) {
+        $errors['cp'] = 'El código postal debe tener al menos 5 dígitos.';
     }
     if (empty($data['provincia'])) {
         $errors['provincia'] = 'Provincia requerida.';
@@ -204,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = true;
             
             // Redirigir al home tras éxito
-            header('Location: ../index.php?success=1');
+            header('Location: ../home.php.php?success=1');
             exit;
         } catch (PDOException $e) {
             $errors['general'] = 'Error al registrar equipo: ' . htmlspecialchars($e->getMessage());
@@ -220,6 +222,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Registro de Equipos</title>
     <link rel="stylesheet" href="../css/style.css">
     <script>
+      function validarCP(input) {
+        // Validar que el CP tenga al menos 5 dígitos
+        if(input.value.length < 5) {
+          input.setCustomValidity('El código postal debe tener al menos 5 dígitos');
+        } else {
+          input.setCustomValidity('');
+        }
+      }
+      
       function autocompletarDireccion() {
         const selectUser = document.getElementById('idUsuario');
         const selectedOption = selectUser.options[selectUser.selectedIndex];
@@ -259,6 +270,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('provincia').value = provinciaAttr || '';
         document.getElementById('localidad').value = localidadAttr || '';
         document.getElementById('direccion').value = direccionAttr || '';
+        
+        // Validar CP después de autocompletar
+        validarCP(document.getElementById('cp'));
       }
       
       function actualizarCampos() {
@@ -296,6 +310,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           autocompletarDireccion();
         }
       }
+      
+      // Validar formulario antes de enviar
+      function validarFormulario() {
+        const cp = document.getElementById('cp');
+        if(cp.value.length < 5) {
+          alert('El código postal debe tener al menos 5 dígitos');
+          cp.focus();
+          return false;
+        }
+        return true;
+      }
     </script>
 </head>
 <body onload="inicializar()">
@@ -309,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <p style="color:green;">Equipo registrado correctamente.</p>
 <?php endif; ?>
 
-<form method="post" action="">
+<form method="post" action="" onsubmit="return validarFormulario()">
     <label>Tipo de Equipo:</label><br/>
     <select name="tipoEquipo[]" multiple onchange="actualizarCampos()" required>
         <option value="">-- Seleccione --</option>
@@ -412,9 +437,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if (!empty($errors['fechaCompra'])): ?><br/><span style="color:red;"><?= $errors['fechaCompra'] ?></span><?php endif; ?>
     <br/><br/>
 
-    <label>Seleccione el Usuario:</label><br/>
+    <label>Seleccione un Cliente:</label><br/>
     <select id="idUsuario" name="idUsuario" onchange="autocompletarDireccion()" required>
-        <option value="">-- Selecciona un usuario --</option>
+        <option value="">-- Selecciona un Cliente --</option>
         <?php foreach ($listaUsuarios as $usr): ?>
             <option 
               value="<?= htmlspecialchars($usr['idUsuarios'] ?? '') ?>"
@@ -448,7 +473,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <br/><br/>
 
     <label>CP:</label><br/>
-    <input type="text" id="cp" name="cp" value="<?= htmlspecialchars($data['cp']) ?>" required>
+    <input type="text" id="cp" name="cp" 
+           value="<?= htmlspecialchars($data['cp']) ?>" 
+           required 
+           minlength="5" 
+           oninput="validarCP(this)" 
+           onblur="validarCP(this)">
     <?php if (!empty($errors['cp'])): ?><br/><span style="color:red;"><?= $errors['cp'] ?></span><?php endif; ?>
     <br/><br/>
 
