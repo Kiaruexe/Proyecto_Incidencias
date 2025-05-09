@@ -476,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="text" name="tipo" value="<?= htmlspecialchars($data['tipo']) ?>"><br/><br/>
     </div>
 
-    <label>Tipo de Mantenimiento:</label><br/>
+    <label>Tipo de Pago:</label><br/>
     <select name="tipoMantenimiento" required>
         <option value="">-- Seleccione --</option>
         <?php foreach ($tiposMantenimiento as $val => $info): ?>
