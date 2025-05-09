@@ -1,0 +1,154 @@
+{
+    "pc": {
+        "label": "PC",
+        "prefijo": "PC",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "placa",
+            "procesador",
+            "memoria",
+            "disco",
+            "observaciones",
+            "costo",
+            "sistema",
+            "ubicacion"
+        ]
+    },
+    "portatil": {
+        "label": "Portátil",
+        "prefijo": "port",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "procesador",
+            "memoria",
+            "disco",
+            "pantalla",
+            "observaciones",
+            "costo",
+            "sistema",
+            "ubicacion"
+        ]
+    },
+    "impresora": {
+        "label": "Impresora",
+        "prefijo": "imp",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "ubicacion",
+            "costo"
+        ]
+    },
+    "monitor": {
+        "label": "Monitor",
+        "prefijo": "mon",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "ubicacion",
+            "costo"
+        ]
+    },
+    "otro": {
+        "label": "Otro",
+        "prefijo": "ot",
+        "campos": [
+            "tipo",
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "ubicacion",
+            "costo"
+        ]
+    },
+    "teclado": {
+        "label": "Teclado",
+        "prefijo": "tecl",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "costo",
+            "ubicacion"
+        ]
+    },
+    "raton": {
+        "label": "Ratón",
+        "prefijo": "rat",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "costo",
+            "ubicacion"
+        ]
+    },
+    "router": {
+        "label": "Router",
+        "prefijo": "rou",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "costo",
+            "ubicacion"
+        ]
+    },
+    "sw": {
+        "label": "Switch",
+        "prefijo": "sw",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "costo",
+            "ubicacion"
+        ]
+    },
+    "sai": {
+        "label": "SAI",
+        "prefijo": "sai",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "costo",
+            "ubicacion"
+        ]
+    },
+    "ghy": {
+        "label": "Telefono",
+        "prefijo": "Tel",
+        "campos": [
+            "marca",
+            "modelo",
+            "observaciones",
+            "costo",
+            "ubicacion"
+        ]
+    },
+    "ghyrr": {
+        "label": "Movil",
+        "prefijo": "Mo",
+        "campos": [
+            "marca",
+            "modelo",
+            "observaciones",
+            "costo"
+        ]
+    }
+}

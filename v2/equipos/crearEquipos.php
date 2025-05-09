@@ -1,6 +1,5 @@
 <?php
-// registro_equipos.php
-
+session_start();
 // Mostrar todos los errores (en desarrollo)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -20,6 +19,85 @@ try {
 } catch (PDOException $e) {
     die("<p style='color:red;'>Error al conectar con la base de datos de usuarios: " . htmlspecialchars($e->getMessage()) . "</p>");
 }
+
+function leerTiposEquipo() {
+  $archivoJson = '../configuracion/tiposEquipo.json';
+  $archivoPhp = '../configuracion/cofTiposEquipo.php';
+  
+  // Intentar leer desde el archivo JSON (prioridad)
+  if (file_exists($archivoJson)) {
+      $contenido = file_get_contents($archivoJson);
+      $datos = json_decode($contenido, true);
+      if ($datos !== null) {
+          return $datos;
+      }
+  }
+  
+  // Si no existe el JSON o falla la decodificación, intentar el PHP
+  if (file_exists($archivoPhp)) {
+      include_once($archivoPhp);
+      if (isset($tiposEquipo)) {
+          return $tiposEquipo;
+      }
+  }
+  
+  // Si ninguno existe o fallan, devolver los tipos por defecto
+  return [
+      'pc' => ['label' => 'PC', 'prefijo' => 'PC', 'campos' => ['marca','modelo','serie','placa','procesador','memoria','disco','observaciones','costo','sistema','ubicacion']],
+      'portatil' => ['label' => 'Portátil', 'prefijo' => 'port', 'campos' => ['marca','modelo','serie','procesador','memoria','disco','pantalla','observaciones','costo','sistema','ubicacion']],
+      'impresora' => ['label' => 'Impresora', 'prefijo' => 'imp', 'campos' => ['marca','modelo','serie','observaciones','ubicacion','costo']],
+      'monitor' => ['label' => 'Monitor', 'prefijo' => 'mon', 'campos' => ['marca','modelo','serie','observaciones','ubicacion','costo']],
+      'otro' => ['label' => 'Otro', 'prefijo' => 'ot', 'campos' => ['tipo','marca','modelo','serie','observaciones','ubicacion','costo']],
+      'teclado' => ['label' => 'Teclado', 'prefijo' => 'tecl', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
+      'raton' => ['label' => 'Ratón', 'prefijo' => 'rat', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
+      'router' => ['label' => 'Router', 'prefijo' => 'rou', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
+      'sw' => ['label' => 'Switch', 'prefijo' => 'sw', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
+      'sai' => ['label' => 'SAI', 'prefijo' => 'sai', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']]
+  ];
+}
+
+// Función para leer los tipos de mantenimiento desde el archivo de configuración
+function leerTiposMantenimiento() {
+    $archivoJson = '../configuracion/tiposMantenimiento.json';
+    $archivoPhp = '../configuracion/tiposMantenimiento.php';
+    
+    // Intentar leer desde el archivo JSON (prioridad)
+    if (file_exists($archivoJson)) {
+        $contenido = file_get_contents($archivoJson);
+        return json_decode($contenido, true);
+    }
+    
+    // Si no existe el JSON, intentar el PHP
+    if (file_exists($archivoPhp)) {
+        include_once($archivoPhp);
+        if (isset($tiposMantenimiento)) {
+            return $tiposMantenimiento;
+        }
+    }
+    
+    // Si ninguno existe, devolver los tipos por defecto
+    return [
+        'mantenimientoCompleto' => [
+            'label' => 'Completo',
+            'descripcion' => 'Servicio de mantenimiento completo que incluye mano de obra y materiales'
+        ],
+        'mantenimientoManoObra' => [
+            'label' => 'Mano de Obra',
+            'descripcion' => 'Servicio que incluye solo mano de obra, sin materiales'
+        ],
+        'mantenimientoFacturable' => [
+            'label' => 'Facturable',
+            'descripcion' => 'Servicio facturable a terceros'
+        ],
+        'mantenimientoGarantia' => [
+            'label' => 'Garantía',
+            'descripcion' => 'Servicio cubierto por garantía'
+        ]
+    ];
+}
+
+$tiposEquipo = leerTiposEquipo();
+$tiposMantenimiento = leerTiposMantenimiento();
 
 // Inicializar arrays
 $errors = [];
@@ -115,18 +193,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Prefijo
             $tipoEquipoPrim = $data['tipoEquipo'][0];
-            switch ($tipoEquipoPrim) {
-                case 'pc':       $prefix = "PC";   break;
-                case 'portatil': $prefix = "port"; break;
-                case 'impresora':$prefix = "imp";  break;
-                case 'monitor':  $prefix = "mon";  break;
-                case 'otro':     $prefix = "ot";   break;
-                case 'teclado':  $prefix = "tecl"; break;
-                case 'raton':    $prefix = "rat";  break;
-                case 'router':   $prefix = "rou";  break;
-                case 'sw':       $prefix = "sw";   break;
-                case 'sai':      $prefix = "sai";  break;
-                default:         $prefix = "EQ";   break;
+            $prefix = "EQ"; // Valor por defecto
+            if (isset($tiposEquipo[$tipoEquipoPrim]) && !empty($tiposEquipo[$tipoEquipoPrim]['prefijo'])) {
+                $prefix = $tiposEquipo[$tipoEquipoPrim]['prefijo'];
             }
             $numEquipo = $prefix . sprintf("%03d", $counter);
             
@@ -206,7 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = true;
             
             // Redirigir al home tras éxito
-            header('Location: ../home.php.php?success=1');
+            header('Location: ../home.php');
             exit;
         } catch (PDOException $e) {
             $errors['general'] = 'Error al registrar equipo: ' . htmlspecialchars($e->getMessage());
@@ -276,31 +345,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
       
       function actualizarCampos() {
-        const select = document.getElementsByName('tipoEquipo[]')[0];
-        const values = Array.from(select.selectedOptions).map(opt=>opt.value);
-        const grupos = [
-          'grupo-marca','grupo-modelo','grupo-serie','grupo-placa','grupo-procesador',
-          'grupo-memoria','grupo-disco','grupo-pantalla','grupo-observaciones',
-          'grupo-costo','grupo-sistema','grupo-ubicacion','grupo-tipo'
-        ];
-        grupos.forEach(id=>document.getElementById(id).style.display='none');
-        const tipoEquipo = values[0] || '';
-        const m = {
-          pc:       ['marca','modelo','serie','placa','procesador','memoria','disco','observaciones','costo','sistema','ubicacion'],
-          portatil: ['marca','modelo','serie','procesador','memoria','disco','pantalla','observaciones','costo','sistema','ubicacion'],
-          impresora:['marca','modelo','serie','observaciones','ubicacion','costo'],
-          monitor:  ['marca','modelo','serie','observaciones','ubicacion','costo'],
-          otro:     ['tipo','marca','modelo','serie','observaciones','ubicacion','costo'],
-          teclado:  ['marca','modelo','serie','observaciones','costo','ubicacion'],
-          raton:    ['marca','modelo','serie','observaciones','costo','ubicacion'],
-          router:   ['marca','modelo','serie','observaciones','costo','ubicacion'],
-          sw:       ['marca','modelo','serie','observaciones','costo','ubicacion'],
-          sai:      ['marca','modelo','serie','observaciones','costo','ubicacion'],
-        };
-        (m[tipoEquipo]||[]).forEach(f=>{
-          document.getElementById('grupo-'+f).style.display='block';
-        });
-      }
+    const select = document.getElementsByName('tipoEquipo[]')[0];
+    const values = Array.from(select.selectedOptions).map(opt=>opt.value);
+    const grupos = [
+      'grupo-marca','grupo-modelo','grupo-serie','grupo-placa','grupo-procesador',
+      'grupo-memoria','grupo-disco','grupo-pantalla','grupo-observaciones',
+      'grupo-costo','grupo-sistema','grupo-ubicacion','grupo-tipo'
+    ];
+    grupos.forEach(id=>document.getElementById(id).style.display='none');
+    
+    const tipoEquipo = values[0] || '';
+    
+    // Cargar tipos de equipo desde PHP
+    const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
+    
+    // Obtener los campos para el tipo seleccionado
+    let camposAMostrar = [];
+    
+    if (tiposEquipo[tipoEquipo] && tiposEquipo[tipoEquipo].campos) {
+      // Si tiene campos definidos
+      camposAMostrar = tiposEquipo[tipoEquipo].campos;
+    } else {
+      // Si no tiene campos definidos, no mostrar nada
+      camposAMostrar = [];
+    }
+    
+    // Mostrar los campos correspondientes
+    camposAMostrar.forEach(campo => {
+      const elemento = document.getElementById('grupo-'+campo);
+      if (elemento) elemento.style.display = 'block';
+    });
+  }
       
       // Función que se ejecuta al cargar la página
       function inicializar() {
@@ -337,26 +412,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <form method="post" action="" onsubmit="return validarFormulario()">
     <label>Tipo de Equipo:</label><br/>
     <select name="tipoEquipo[]" multiple onchange="actualizarCampos()" required>
-        <option value="">-- Seleccione --</option>
-        <?php
-        $tipos = [
-        'pc'=>'PC',
-        'portatil'=>'Portátil',
-        'impresora'=>'Impresora',
-        'monitor'=>'Monitor',
-        'otro'=>'Otro',
-        'teclado'=>'Teclado',
-        'raton'=>'Ratón',
-        'router'=>'Router',
-        'sw'=>'Switch',
-        'sai'=>'SAI'];
-        foreach ($tipos as $val=>$label): ?>
-          <option value="<?= $val ?>"
-            <?= in_array($val, $data['tipoEquipo']) ? 'selected' : '' ?>>
-            <?= $label ?>
-          </option>
-        <?php endforeach; ?>
-    </select>
+    <option value="">-- Seleccione --</option>
+    <?php foreach ($tiposEquipo as $val => $info): ?>
+      <option value="<?= htmlspecialchars($val) ?>"
+        <?= in_array($val, $data['tipoEquipo']) ? 'selected' : '' ?>>
+        <?= htmlspecialchars($info['label']) ?>
+      </option>
+    <?php endforeach; ?>
+</select>
     <?php if (!empty($errors['tipoEquipo'])): ?><br/><span style="color:red;"><?= $errors['tipoEquipo'] ?></span><?php endif; ?>
     <br/><br/>
 
@@ -416,16 +479,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <label>Tipo de Mantenimiento:</label><br/>
     <select name="tipoMantenimiento" required>
         <option value="">-- Seleccione --</option>
-        <?php
-        $tm = [
-          'mantenimientoCompleto'=>'Completo',
-          'mantenimientoManoObra'=>'Mano de Obra',
-          'mantenimientoFacturable'=>'Facturable',
-          'mantenimientoGarantia'=>'Garantía'
-        ];
-        foreach ($tm as $val=>$label): ?>
-          <option value="<?= $val ?>" <?= $data['tipoMantenimiento']===$val?'selected':'' ?>>
-            <?= $label ?>
+        <?php foreach ($tiposMantenimiento as $val => $info): ?>
+          <option value="<?= htmlspecialchars($val) ?>" 
+                  <?= $data['tipoMantenimiento'] === $val ? 'selected' : '' ?>>
+            <?= htmlspecialchars($info['label']) ?>
           </option>
         <?php endforeach; ?>
     </select>
