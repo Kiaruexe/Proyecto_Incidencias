@@ -280,7 +280,13 @@ try {
                             <a href="equipos/verEquipos.php">Ver Equipos</a>
                         </div>
                     </div>
-
+                    <div class="admin-section">
+                        <h2>Configuracion</h2>
+                        <div class="admin-section-buttons">
+                            <a href="configuracion/confTiposEquipo.php">Configurar Equipo</a>
+                            <a href="configuracion/confPagos.php">Configurar tipos mantenimiento</a>
+                        </div>
+                    </div>
                     <div class="admin-section">
                         <h2>Gestión de Incidencias</h2>
                         <div class="admin-section-buttons">
