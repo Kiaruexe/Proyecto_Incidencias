@@ -291,51 +291,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Registro de Equipos</title>
     <link rel="stylesheet" href="../css/style.css">
     <script>
+            // Función mejorada para validar la garantía
       function validarGarantia() {
-      const fechaCompra = document.querySelector('input[name="fechaCompra"]').value;
-      
-      // Si no hay fecha seleccionada, no hacemos nada
-      if (!fechaCompra) return;
-      
-      const fechaCompraObj = new Date(fechaCompra);
-      const fechaActual = new Date();
-      
-      // Calculamos la diferencia en años
-      const diferenciaMilisegundos = fechaActual - fechaCompraObj;
-      const diferenciaAnios = diferenciaMilisegundos / (1000 * 60 * 60 * 24 * 365.25);
-      
-      // Referencia al select de tipo de mantenimiento
-      const selectTipoMantenimiento = document.querySelector('select[name="tipoMantenimiento"]');
-      
-      // Buscamos la opción de garantía
-      for (let i = 0; i < selectTipoMantenimiento.options.length; i++) {
-        const option = selectTipoMantenimiento.options[i];
-        if (option.value === 'mantenimientoGarantia') {
-          // Si han pasado más de 3 años, ocultamos la opción de garantía
-          if (diferenciaAnios > 3) {
-            option.style.display = 'none';
-            // Si la opción estaba seleccionada, la deseleccionamos
-            if (option.selected) {
-              option.selected = false;
-              selectTipoMantenimiento.value = '';
-            }
-          } else {
-            option.style.display = '';
+        // Obtener el elemento de fecha de compra
+        const fechaCompraInput = document.querySelector('input[name="fechaCompra"]');
+        if (!fechaCompraInput) {
+          console.log('Elemento fecha de compra no encontrado');
+          return;
+        }
+        
+        const fechaCompra = fechaCompraInput.value;
+        
+        // Si no hay fecha seleccionada, no hacemos nada
+        if (!fechaCompra) {
+          console.log('No hay fecha de compra seleccionada');
+          return;
+        }
+        
+        const fechaCompraObj = new Date(fechaCompra);
+        const fechaActual = new Date();
+        
+        // Calculamos la diferencia en años
+        const diferenciaMilisegundos = fechaActual - fechaCompraObj;
+        const diferenciaAnios = diferenciaMilisegundos / (1000 * 60 * 60 * 24 * 365.25);
+        
+        console.log('Fecha compra:', fechaCompra);
+        console.log('Diferencia en años:', diferenciaAnios);
+        
+        // Referencia al select de tipo de mantenimiento
+        const selectTipoMantenimiento = document.querySelector('select[name="tipoMantenimiento"]');
+        if (!selectTipoMantenimiento) {
+          console.log('Elemento select tipo mantenimiento no encontrado');
+          return;
+        }
+        
+        // Buscamos la opción de garantía
+        let garantiaOption = null;
+        for (let i = 0; i < selectTipoMantenimiento.options.length; i++) {
+          const option = selectTipoMantenimiento.options[i];
+          if (option.value === 'mantenimientoGarantia') {
+            garantiaOption = option;
+            break;
           }
-          break;
+        }
+        
+        if (!garantiaOption) {
+          console.log('Opción de garantía no encontrada');
+          return;
+        }
+        
+        // Si han pasado más de 3 años, ocultamos la opción de garantía
+        if (diferenciaAnios > 3) {
+          console.log('Garantía no aplicable - más de 3 años');
+          garantiaOption.style.display = 'none';
+          // Si la opción estaba seleccionada, la deseleccionamos
+          if (garantiaOption.selected) {
+            garantiaOption.selected = false;
+            selectTipoMantenimiento.value = '';
+          }
+        } else {
+          console.log('Garantía aplicable - menos de 3 años');
+          garantiaOption.style.display = '';
         }
       }
-    }
 
-    // Añadimos evento de cambio a la fecha de compra
-    document.addEventListener('DOMContentLoaded', function() {
-      const fechaCompraInput = document.querySelector('input[name="fechaCompra"]');
-      if (fechaCompraInput) {
-        fechaCompraInput.addEventListener('change', validarGarantia);
-        // Validamos al cargar la página
-        validarGarantia();
+      // Función para garantizar que todo se inicialice correctamente
+      function inicializarFormulario() {
+        console.log('Inicializando formulario...');
+        
+        // Inicializar primero la actualización de campos
+        actualizarCampos();
+        
+        // Aplicar la validación de garantía
+        try {
+          validarGarantia();
+          console.log('Validación de garantía aplicada correctamente');
+        } catch (error) {
+          console.error('Error al validar garantía:', error);
+        }
+        
+        // Autocompletar dirección si hay un usuario seleccionado
+        const usuarioSelect = document.getElementById('idUsuario');
+        if (usuarioSelect && usuarioSelect.value) {
+          autocompletarDireccion();
+          console.log('Dirección autocompletada');
+        }
       }
-    });
+
+      // Asegurar que el script se ejecute cuando el DOM esté completamente cargado
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM cargado completamente');
+        
+        // Configurar event listeners
+        const fechaCompraInput = document.querySelector('input[name="fechaCompra"]');
+        if (fechaCompraInput) {
+          fechaCompraInput.addEventListener('change', validarGarantia);
+          console.log('Event listener añadido a fecha de compra');
+        }
+        
+        // Inicializar el formulario después de que el DOM esté listo
+        setTimeout(inicializarFormulario, 100); // Pequeño retraso para garantizar que todo esté cargado
+      });
+
+      // Las demás funciones quedan igual
 
       function validarCP(input) {
         // Validar que el CP tenga al menos 5 dígitos
@@ -345,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           input.setCustomValidity('');
         }
       }
-      
+
       function autocompletarDireccion() {
         const selectUser = document.getElementById('idUsuario');
         const selectedOption = selectUser.options[selectUser.selectedIndex];
@@ -389,49 +447,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validar CP después de autocompletar
         validarCP(document.getElementById('cp'));
       }
-      
+
       function actualizarCampos() {
-    const select = document.getElementsByName('tipoEquipo[]')[0];
-    const values = Array.from(select.selectedOptions).map(opt=>opt.value);
-    const grupos = [
-      'grupo-marca','grupo-modelo','grupo-serie','grupo-placa','grupo-procesador',
-      'grupo-memoria','grupo-disco','grupo-pantalla','grupo-observaciones',
-      'grupo-costo','grupo-sistema','grupo-ubicacion','grupo-tipo'
-    ];
-    grupos.forEach(id=>document.getElementById(id).style.display='none');
-    
-    const tipoEquipo = values[0] || '';
-    
-    // Cargar tipos de equipo desde PHP
-    const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
-    
-    // Obtener los campos para el tipo seleccionado
-    let camposAMostrar = [];
-    
-    if (tiposEquipo[tipoEquipo] && tiposEquipo[tipoEquipo].campos) {
-      // Si tiene campos definidos
-      camposAMostrar = tiposEquipo[tipoEquipo].campos;
-    } else {
-      // Si no tiene campos definidos, no mostrar nada
-      camposAMostrar = [];
-    }
-    
-    // Mostrar los campos correspondientes
-    camposAMostrar.forEach(campo => {
-      const elemento = document.getElementById('grupo-'+campo);
-      if (elemento) elemento.style.display = 'block';
-    });
-  }
-      
-      // Función que se ejecuta al cargar la página
-      function inicializar() {
-        actualizarCampos();
-        // Si hay un usuario ya seleccionado, autocompletar sus direcciones
-        if (document.getElementById('idUsuario').value) {
-          autocompletarDireccion();
+        const select = document.getElementsByName('tipoEquipo[]')[0];
+        if (!select) {
+          console.log('Elemento select tipoEquipo no encontrado');
+          return;
         }
+        
+        const values = Array.from(select.selectedOptions).map(opt=>opt.value);
+        const grupos = [
+          'grupo-marca','grupo-modelo','grupo-serie','grupo-placa','grupo-procesador',
+          'grupo-memoria','grupo-disco','grupo-pantalla','grupo-observaciones',
+          'grupo-costo','grupo-sistema','grupo-ubicacion','grupo-tipo'
+        ];
+        grupos.forEach(id=>{
+          const elemento = document.getElementById(id);
+          if (elemento) elemento.style.display='none';
+        });
+        
+        const tipoEquipo = values[0] || '';
+        
+        // Obtenemos los tipos de equipo directamente del objeto global (ya se habrá definido en PHP)
+        if (typeof tiposEquipo === 'undefined') {
+          console.error('La variable tiposEquipo no está definida');
+          return;
+        }
+        
+        // Obtener los campos para el tipo seleccionado
+        let camposAMostrar = [];
+        
+        if (tiposEquipo[tipoEquipo] && tiposEquipo[tipoEquipo].campos) {
+          // Si tiene campos definidos
+          camposAMostrar = tiposEquipo[tipoEquipo].campos;
+        } else {
+          // Si no tiene campos definidos, no mostrar nada
+          camposAMostrar = [];
+        }
+        
+        // Mostrar los campos correspondientes
+        camposAMostrar.forEach(campo => {
+          const elemento = document.getElementById('grupo-'+campo);
+          if (elemento) elemento.style.display = 'block';
+        });
       }
-      
+
       // Validar formulario antes de enviar
       function validarFormulario() {
         const cp = document.getElementById('cp');
