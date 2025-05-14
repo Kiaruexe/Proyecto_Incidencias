@@ -150,5 +150,16 @@
             "observaciones",
             "costo"
         ]
+    },
+    "tab": {
+        "label": "Tablet",
+        "prefijo": "Tab",
+        "campos": [
+            "marca",
+            "modelo",
+            "serie",
+            "observaciones",
+            "costo"
+        ]
     }
 }

@@ -291,6 +291,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Registro de Equipos</title>
     <link rel="stylesheet" href="../css/style.css">
     <script>
+      function validarGarantia() {
+      const fechaCompra = document.querySelector('input[name="fechaCompra"]').value;
+      
+      // Si no hay fecha seleccionada, no hacemos nada
+      if (!fechaCompra) return;
+      
+      const fechaCompraObj = new Date(fechaCompra);
+      const fechaActual = new Date();
+      
+      // Calculamos la diferencia en años
+      const diferenciaMilisegundos = fechaActual - fechaCompraObj;
+      const diferenciaAnios = diferenciaMilisegundos / (1000 * 60 * 60 * 24 * 365.25);
+      
+      // Referencia al select de tipo de mantenimiento
+      const selectTipoMantenimiento = document.querySelector('select[name="tipoMantenimiento"]');
+      
+      // Buscamos la opción de garantía
+      for (let i = 0; i < selectTipoMantenimiento.options.length; i++) {
+        const option = selectTipoMantenimiento.options[i];
+        if (option.value === 'mantenimientoGarantia') {
+          // Si han pasado más de 3 años, ocultamos la opción de garantía
+          if (diferenciaAnios > 3) {
+            option.style.display = 'none';
+            // Si la opción estaba seleccionada, la deseleccionamos
+            if (option.selected) {
+              option.selected = false;
+              selectTipoMantenimiento.value = '';
+            }
+          } else {
+            option.style.display = '';
+          }
+          break;
+        }
+      }
+    }
+
+    // Añadimos evento de cambio a la fecha de compra
+    document.addEventListener('DOMContentLoaded', function() {
+      const fechaCompraInput = document.querySelector('input[name="fechaCompra"]');
+      if (fechaCompraInput) {
+        fechaCompraInput.addEventListener('change', validarGarantia);
+        // Validamos al cargar la página
+        validarGarantia();
+      }
+    });
+
       function validarCP(input) {
         // Validar que el CP tenga al menos 5 dígitos
         if(input.value.length < 5) {
@@ -398,7 +444,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     </script>
 </head>
-<body onload="inicializar()">
+<body onload="inicializar(); validarGarantia();">
 <h1>Registrar nuevo equipo</h1>
 
 <?php if (!empty($errors['general'])): ?>
@@ -490,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <br/><br/>
 
     <label>Fecha de Compra:</label><br/>
-    <input type="date" name="fechaCompra" value="<?= htmlspecialchars($data['fechaCompra']) ?>" required>
+    <input type="date" name="fechaCompra" value="<?= htmlspecialchars($data['fechaCompra']) ?>" required onchange="validarGarantia()">
     <?php if (!empty($errors['fechaCompra'])): ?><br/><span style="color:red;"><?= $errors['fechaCompra'] ?></span><?php endif; ?>
     <br/><br/>
 
