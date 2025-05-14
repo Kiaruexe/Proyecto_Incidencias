@@ -95,6 +95,23 @@ try {
     exit;
 }
 
+// Manejar solicitud de borrado
+if (isset($_POST['borrar']) && isset($_POST['numEquipo'])) {
+    $numEquipoBorrar = $_POST['numEquipo'];
+    try {
+        $sqlBorrar = "DELETE FROM Equipos WHERE numEquipo = ?";
+        $stmtBorrar = $bd->prepare($sqlBorrar);
+        $stmtBorrar->execute([$numEquipoBorrar]);
+        
+        // Redireccionar después del borrado
+        header("Location: ../home.php");
+        exit;
+    } catch (PDOException $e) {
+        echo "<p style='color:red;'>Error al borrar equipo: " . $e->getMessage() . "</p>";
+        exit;
+    }
+}
+
 // Obtener la lista de clientes para el filtro
 try {
     $sqlClientes = "SELECT idUsuarios, usuario FROM Usuarios WHERE permiso = 'cliente' ORDER BY usuario";
@@ -216,10 +233,26 @@ if (!isset($_GET['id'])) {
                 cursor: pointer;
                 text-decoration: none;
                 display: inline-block;
+                margin-right: 5px;
             }
             
             .action-button:hover {
                 background-color: #45a049;
+            }
+            
+            .delete-button {
+                background-color: #f44336;
+                color: white;
+                padding: 5px 10px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-block;
+            }
+            
+            .delete-button:hover {
+                background-color: #d32f2f;
             }
             
             .clear-button {
@@ -240,6 +273,11 @@ if (!isset($_GET['id'])) {
                 background-color: #0b7dda;
             }
         </style>
+        <script>
+            function confirmarBorrado(numEquipo, tipoEquipo, cliente) {
+                return confirm(`¿Está seguro que desea eliminar el equipo ${numEquipo} (${tipoEquipo}) de ${cliente}?\n\nEsta acción no se puede deshacer.`);
+            }
+        </script>
     </head>
     <body>
         <h1>Seleccionar Equipo a Modificar</h1>
@@ -288,7 +326,7 @@ if (!isset($_GET['id'])) {
                         <th>Número Equipo</th>
                         <th>Tipo</th>
                         <th>Cliente</th>
-                        <th>Acción</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -301,6 +339,13 @@ if (!isset($_GET['id'])) {
                             <td><?= htmlspecialchars($eq['nombreCliente']); ?></td>
                             <td>
                                 <a href="?id=<?= htmlspecialchars($eq['numEquipo']); ?>" class="action-button">Modificar</a>
+                                <form method="post" action="" style="display:inline;" 
+                                      onsubmit="return confirmarBorrado('<?= htmlspecialchars($eq['numEquipo']); ?>', 
+                                                               '<?= htmlspecialchars($tiposEquipo[$eq['tipoEquipo']]['label'] ?? $eq['tipoEquipo']); ?>', 
+                                                               '<?= htmlspecialchars($eq['nombreCliente']); ?>')">
+                                    <input type="hidden" name="numEquipo" value="<?= htmlspecialchars($eq['numEquipo']); ?>">
+                                    <button type="submit" name="borrar" class="delete-button">Borrar</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -494,6 +539,44 @@ if (isset($_POST['modificar'])) {
             color: green;
             margin: 10px 0;
             font-weight: bold;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .delete-button:hover {
+            background-color: #d32f2f;
+        }
+        .modify-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .modify-button:hover {
+            background-color: #45a049;
+        }
+        .cancel-button {
+            background-color: #ccc;
+            color: black;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cancel-button:hover {
+            background-color: #bbb;
         }
     </style>
     <script>
