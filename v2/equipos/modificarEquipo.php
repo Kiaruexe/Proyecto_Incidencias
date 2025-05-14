@@ -1,4 +1,3 @@
-
 <?php 
 session_start();
 
@@ -95,11 +94,45 @@ try {
     echo "<p style='color:red;'>Error de conexión: " . $e->getMessage() . "</p>";
     exit;
 }
+
+// Obtener la lista de clientes para el filtro
+try {
+    $sqlClientes = "SELECT idUsuarios, usuario FROM Usuarios WHERE permiso = 'cliente' ORDER BY usuario";
+    $stmtClientes = $bd->prepare($sqlClientes);
+    $stmtClientes->execute();
+    $listaClientes = $stmtClientes->fetchAll();
+} catch (PDOException $e) {
+    echo "<p style='color:red;'>Error al cargar clientes: " . $e->getMessage() . "</p>";
+    $listaClientes = [];
+}
+
 if (!isset($_GET['id'])) {
+    // Obtener los filtros del formulario
+    $filtroCliente = isset($_GET['filtroCliente']) ? $_GET['filtroCliente'] : '';
+    $filtroTipoEquipo = isset($_GET['filtroTipoEquipo']) ? $_GET['filtroTipoEquipo'] : '';
+    
     try {
-        $sql = "SELECT numEquipo FROM Equipos";
+        // Construir la consulta SQL con filtros
+        $sql = "SELECT e.numEquipo, e.tipoEquipo, u.usuario as nombreCliente 
+                FROM Equipos e 
+                LEFT JOIN Usuarios u ON e.idUsuario = u.idUsuarios 
+                WHERE 1=1";
+        $params = [];
+        
+        if (!empty($filtroCliente)) {
+            $sql .= " AND e.idUsuario = ?";
+            $params[] = $filtroCliente;
+        }
+        
+        if (!empty($filtroTipoEquipo)) {
+            $sql .= " AND e.tipoEquipo = ?";
+            $params[] = $filtroTipoEquipo;
+        }
+        
+        $sql .= " ORDER BY e.numEquipo";
+        
         $stmt = $bd->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $equipos = $stmt->fetchAll();
     } catch (PDOException $e) {
         echo "<p style='color:red;'>Error al obtener equipos: " . $e->getMessage() . "</p>";
@@ -112,28 +145,178 @@ if (!isset($_GET['id'])) {
         <meta charset="UTF-8">
         <title>Seleccionar Equipo a Modificar</title>
         <link rel="stylesheet" href="../css/style.css">
+        <style>
+            .filters-container {
+                background-color: #f5f5f5;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 5px;
+                border: 1px solid #ddd;
+            }
+            
+            .filter-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .filter-item {
+                flex: 1;
+                min-width: 200px;
+            }
+            
+            .filter-label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+            
+            .button-row {
+                display: flex;
+                gap: 10px;
+            }
+            
+            select, input[type="submit"], button {
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+            }
+            
+            .equipment-list {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            
+            .equipment-list th, .equipment-list td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            
+            .equipment-list th {
+                background-color: #f2f2f2;
+            }
+            
+            .equipment-list tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            
+            .equipment-list tr:hover {
+                background-color: #f1f1f1;
+            }
+            
+            .action-button {
+                background-color: #4CAF50;
+                color: white;
+                padding: 5px 10px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-block;
+            }
+            
+            .action-button:hover {
+                background-color: #45a049;
+            }
+            
+            .clear-button {
+                background-color: #f44336;
+                color: white;
+            }
+            
+            .clear-button:hover {
+                background-color: #d32f2f;
+            }
+            
+            .apply-button {
+                background-color: #2196F3;
+                color: white;
+            }
+            
+            .apply-button:hover {
+                background-color: #0b7dda;
+            }
+        </style>
     </head>
     <body>
         <h1>Seleccionar Equipo a Modificar</h1>
-        <form method="get" action="">
-            <label for="id">Equipo:</label>
-            <select name="id" id="id" required>
-                <option value="">-- Seleccione un equipo --</option>
-                <?php foreach ($equipos as $eq): ?>
-                    <option value="<?= htmlspecialchars($eq['numEquipo']); ?>">
-                        <?= htmlspecialchars($eq['numEquipo']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <br><br>
-            <input type="submit" value="Modificar Equipo">
-        </form>
+        
+        <div class="filters-container">
+            <form method="get" action="">
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label class="filter-label" for="filtroCliente">Cliente:</label>
+                        <select name="filtroCliente" id="filtroCliente">
+                            <option value="">-- Todos los clientes --</option>
+                            <?php foreach ($listaClientes as $cliente): ?>
+                                <option value="<?= htmlspecialchars($cliente['idUsuarios']); ?>" 
+                                    <?= ($filtroCliente == $cliente['idUsuarios']) ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($cliente['usuario']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-item">
+                        <label class="filter-label" for="filtroTipoEquipo">Tipo Equipo:</label>
+                        <select name="filtroTipoEquipo" id="filtroTipoEquipo">
+                            <option value="">-- Todos los tipos --</option>
+                            <?php foreach ($tiposEquipo as $codigo => $info): ?>
+                                <option value="<?= htmlspecialchars($codigo); ?>" 
+                                    <?= ($filtroTipoEquipo == $codigo) ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($info['label']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="button-row">
+                    <input type="submit" value="Aplicar Filtros" class="apply-button">
+                    <button type="button" onclick="window.location.href='<?= $_SERVER['PHP_SELF']; ?>'" class="clear-button">Limpiar Filtros</button>
+                </div>
+            </form>
+        </div>
+        
+        <?php if (count($equipos) > 0): ?>
+            <table class="equipment-list">
+                <thead>
+                    <tr>
+                        <th>Número Equipo</th>
+                        <th>Tipo</th>
+                        <th>Cliente</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($equipos as $eq): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($eq['numEquipo']); ?></td>
+                            <td>
+                                <?= htmlspecialchars($tiposEquipo[$eq['tipoEquipo']]['label'] ?? $eq['tipoEquipo']); ?>
+                            </td>
+                            <td><?= htmlspecialchars($eq['nombreCliente']); ?></td>
+                            <td>
+                                <a href="?id=<?= htmlspecialchars($eq['numEquipo']); ?>" class="action-button">Modificar</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p>No se encontraron equipos con los filtros seleccionados.</p>
+        <?php endif; ?>
+        
         <p><a href="../home.php">Volver al home</a></p>
     </body>
     </html>
     <?php
     exit;
 }
+
 $numEquipoModificar = $_GET['id'];
 try {
     $sql = "SELECT * FROM Equipos WHERE numEquipo = ?";
