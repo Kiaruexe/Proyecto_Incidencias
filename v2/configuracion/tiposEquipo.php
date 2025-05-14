@@ -177,4 +177,17 @@ $tiposEquipo = array (
       3 => 'costo',
     ),
   ),
+  'tab' => 
+  array (
+    'label' => 'Tablet',
+    'prefijo' => 'Tab',
+    'campos' => 
+    array (
+      0 => 'marca',
+      1 => 'modelo',
+      2 => 'serie',
+      3 => 'observaciones',
+      4 => 'costo',
+    ),
+  ),
 );

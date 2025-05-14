@@ -5,9 +5,6 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
-// Verificar si el usuario es administrador (agrega tu lógica de verificación de admin aquí)
-// Por ejemplo:
 session_start();
 // Inicializar variables
 $mensaje = '';
@@ -77,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $valor = isset($_POST['valor']) ? strtolower(trim($_POST['valor'])) : '';
         $etiqueta = isset($_POST['etiqueta']) ? trim($_POST['etiqueta']) : '';
         $prefijo = isset($_POST['prefijo']) ? trim($_POST['prefijo']) : '';
+        $camposSeleccionados = isset($_POST['campos']) ? $_POST['campos'] : [];
         
         // Validar entradas
         if (empty($valor) || empty($etiqueta) || empty($prefijo)) {
@@ -86,17 +84,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($tiposEquipo[$valor])) {
             $error = 'Ya existe un tipo de equipo con ese valor.';
         } else {
-            // Agregar nuevo tipo
+            // Agregar nuevo tipo con los campos seleccionados
             $tiposEquipo[$valor] = [
                 'label' => $etiqueta,
                 'prefijo' => $prefijo,
-                'campos' => [] // Inicializar array de campos vacío
+                'campos' => $camposSeleccionados // Guardar los campos seleccionados
             ];
             
             // Guardar en archivo
             guardarTiposEquipo($tiposEquipo);
             
-            $mensaje = 'Tipo de equipo agregado correctamente.';
+            $mensaje = 'Tipo de equipo agregado correctamente con sus campos configurados.';
         }
     } elseif (isset($_POST['eliminar_tipo'])) {
         $valorEliminar = $_POST['eliminar_tipo'];
@@ -108,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Eliminar tipo
             unset($tiposEquipo[$valorEliminar]);
+            
             
             // Guardar en archivo
             guardarTiposEquipo($tiposEquipo);
@@ -146,6 +145,31 @@ if (isset($_POST['guardar_campos'])) {
     }
 }
 
+// Lista de todos los campos posibles para mostrar en el formulario
+$todosCampos = [
+    'marca' => 'Marca',
+    'modelo' => 'Modelo',
+    'serie' => 'Serie',
+    'placa' => 'Placa',
+    'procesador' => 'Procesador',
+    'memoria' => 'Memoria',
+    'disco' => 'Disco',
+    'pantalla' => 'Pantalla',
+    'observaciones' => 'Observaciones',
+    'costo' => 'Costo',
+    'sistema' => 'Sistema',
+    'ubicacion' => 'Ubicación',
+    'tipo' => 'Tipo (Específico)'
+];
+
+// Agrupar los campos para mejor organización en el formulario
+$gruposCampos = [
+    'grupo1' => ['marca', 'modelo', 'serie', 'placa'],
+    'grupo2' => ['procesador', 'memoria', 'disco', 'pantalla'],
+    'grupo3' => ['observaciones', 'costo', 'sistema', 'ubicacion'],
+    'grupo4' => ['tipo']
+];
+
 ?>
 
 <!DOCTYPE html>
@@ -170,21 +194,6 @@ if (isset($_POST['guardar_campos'])) {
         th {
             background-color: #f2f2f2;
         }
-        .mensaje {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-        }
-        .exito {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
         .accion {
             margin-right: 5px;
         }
@@ -192,8 +201,43 @@ if (isset($_POST['guardar_campos'])) {
             margin-top: 20px;
             display: none;
         }
+        .campos-section {
+            margin-top: 15px;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .campos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .campos-grupo {
+            margin-right: 20px;
+        }
+        .toggle-section {
+            cursor: pointer;
+            color: #0066cc;
+            text-decoration: underline;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
     </style>
     <script>
+        // Mostrar alertas al cargar la página si hay mensajes
+        window.onload = function() {
+            <?php if (!empty($mensaje)): ?>
+                alert("✅ <?= addslashes($mensaje) ?>");
+            <?php endif; ?>
+            
+            <?php if (!empty($error)): ?>
+                alert("⚠️ <?= addslashes($error) ?>");
+            <?php endif; ?>
+            
+            // Inicializar con la sección de campos visible
+            document.getElementById('camposNuevoTipo').style.display = 'block';
+        }
+        
         function mostrarFormularioCampos(tipo, label) {
             document.getElementById('formulario-campos').style.display = 'block';
             document.getElementById('tipo_editar').value = tipo;
@@ -226,6 +270,19 @@ if (isset($_POST['guardar_campos'])) {
             // Scroll al formulario
             document.getElementById('formulario-campos').scrollIntoView();
         }
+        
+        function toggleCamposSeccion() {
+            const seccion = document.getElementById('camposNuevoTipo');
+            const enlace = document.getElementById('toggleCampos');
+            
+            if (seccion.style.display === 'none') {
+                seccion.style.display = 'block';
+                enlace.textContent = 'Ocultar selección de campos';
+            } else {
+                seccion.style.display = 'none';
+                enlace.textContent = 'Mostrar selección de campos';
+            }
+        }
     </script>
 </head>
 <body>
@@ -237,14 +294,6 @@ if (isset($_POST['guardar_campos'])) {
             <li><a href="../equipos/crearEquipos.php">Registrar Equipo</a></li>
         </ul>
     </nav>
-    
-    <?php if (!empty($mensaje)): ?>
-        <div class="mensaje exito"><?= htmlspecialchars($mensaje) ?></div>
-    <?php endif; ?>
-    
-    <?php if (!empty($error)): ?>
-        <div class="mensaje error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
     
     <h2>Tipos de Equipo Existentes</h2>
     <table>
@@ -304,7 +353,26 @@ if (isset($_POST['guardar_campos'])) {
             <input type="text" id="prefijo" name="prefijo" required maxlength="5">
             <small>Código corto usado para generar el número de equipo (máx. 5 caracteres).</small>
         </div>
-        <div>
+        
+        <!-- Nueva sección para seleccionar campos al crear tipo -->
+        <div class="campos-section" id="camposNuevoTipo">
+            <h3>Seleccione los campos para este tipo de equipo:</h3>
+            
+            <div class="campos-grid">
+                <?php foreach ($gruposCampos as $grupo => $campos): ?>
+                <div class="campos-grupo">
+                    <?php foreach ($campos as $campo): ?>
+                    <label>
+                        <input type="checkbox" name="campos[]" value="<?= htmlspecialchars($campo) ?>"> 
+                        <?= htmlspecialchars($todosCampos[$campo]) ?>
+                    </label><br>
+                    <?php endforeach; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px;">
             <button type="submit" name="agregar_tipo">Agregar Tipo de Equipo</button>
         </div>
     </form>
@@ -316,28 +384,17 @@ if (isset($_POST['guardar_campos'])) {
             
             <p>Seleccione los campos que se mostrarán para este tipo de equipo:</p>
             
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                <div style="margin-right: 20px;">
-                    <label><input type="checkbox" name="campos[]" value="marca"> Marca</label><br>
-                    <label><input type="checkbox" name="campos[]" value="modelo"> Modelo</label><br>
-                    <label><input type="checkbox" name="campos[]" value="serie"> Serie</label><br>
-                    <label><input type="checkbox" name="campos[]" value="placa"> Placa</label><br>
+            <div class="campos-grid">
+                <?php foreach ($gruposCampos as $grupo => $campos): ?>
+                <div class="campos-grupo">
+                    <?php foreach ($campos as $campo): ?>
+                    <label>
+                        <input type="checkbox" name="campos[]" value="<?= htmlspecialchars($campo) ?>"> 
+                        <?= htmlspecialchars($todosCampos[$campo]) ?>
+                    </label><br>
+                    <?php endforeach; ?>
                 </div>
-                <div style="margin-right: 20px;">
-                    <label><input type="checkbox" name="campos[]" value="procesador"> Procesador</label><br>
-                    <label><input type="checkbox" name="campos[]" value="memoria"> Memoria</label><br>
-                    <label><input type="checkbox" name="campos[]" value="disco"> Disco</label><br>
-                    <label><input type="checkbox" name="campos[]" value="pantalla"> Pantalla</label><br>
-                </div>
-                <div style="margin-right: 20px;">
-                    <label><input type="checkbox" name="campos[]" value="observaciones"> Observaciones</label><br>
-                    <label><input type="checkbox" name="campos[]" value="costo"> Costo</label><br>
-                    <label><input type="checkbox" name="campos[]" value="sistema"> Sistema</label><br>
-                    <label><input type="checkbox" name="campos[]" value="ubicacion"> Ubicación</label><br>
-                </div>
-                <div>
-                    <label><input type="checkbox" name="campos[]" value="tipo"> Tipo (Específico)</label><br>
-                </div>
+                <?php endforeach; ?>
             </div>
             
             <div style="margin-top: 15px;">
