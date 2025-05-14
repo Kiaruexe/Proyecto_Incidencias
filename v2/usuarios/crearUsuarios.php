@@ -8,23 +8,23 @@ if (isset($_POST['registrar'])) {
     $correo            = $_POST['correo']            ?? null;
     $contrasenaTexto   = $_POST['contrasena']        ?? null;
     $permiso           = $_POST['permiso']           ?? null;
-    $cpFiscal          = limpiarCampo($_POST['cpFiscal']);
-    $provinciaFiscal   = limpiarCampo($_POST['provinciaFiscal']);
-    $localidadFiscal   = limpiarCampo($_POST['localidadFiscal']);
-    $direccionFiscal   = limpiarCampo($_POST['direccionFiscal']);
-    $cp1               = limpiarCampo($_POST['cp1']);
-    $provincia1        = limpiarCampo($_POST['provincia1']);
-    $localidad1        = limpiarCampo($_POST['localidad1']);
-    $direccion1        = limpiarCampo($_POST['direccion1']);
-    $cp2               = limpiarCampo($_POST['cp2']);
-    $provincia2        = limpiarCampo($_POST['provincia2']);
-    $localidad2        = limpiarCampo($_POST['localidad2']);
-    $direccion2        = limpiarCampo($_POST['direccion2']);
+    $cpFiscal          = limpiarCampo($_POST['cpFiscal'] ?? '');
+    $provinciaFiscal   = limpiarCampo($_POST['provinciaFiscal'] ?? '');
+    $localidadFiscal   = limpiarCampo($_POST['localidadFiscal'] ?? '');
+    $direccionFiscal   = limpiarCampo($_POST['direccionFiscal'] ?? '');
+    $cp1               = limpiarCampo($_POST['cp1'] ?? '');
+    $provincia1        = limpiarCampo($_POST['provincia1'] ?? '');
+    $localidad1        = limpiarCampo($_POST['localidad1'] ?? '');
+    $direccion1        = limpiarCampo($_POST['direccion1'] ?? '');
+    $cp2               = limpiarCampo($_POST['cp2'] ?? '');
+    $provincia2        = limpiarCampo($_POST['provincia2'] ?? '');
+    $localidad2        = limpiarCampo($_POST['localidad2'] ?? '');
+    $direccion2        = limpiarCampo($_POST['direccion2'] ?? '');
 
     $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
 
     try {
-        $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com:3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62');
+        $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62');
 
         $sql = "INSERT INTO Usuarios (
             usuario, correo, contrasena, permiso,
@@ -53,9 +53,18 @@ if (isset($_POST['registrar'])) {
             $direccion2
         ]);
 
-        echo "<p style='color:green;'>Usuario registrado con éxito.</p>";
+        // Mostrar mensaje de éxito en un alert y redirigir
+        echo "<script>
+                alert('✅ Usuario registrado con éxito.');
+                window.location.href = '../home.php'; // Redirigir al home
+              </script>";
+        exit; // Detener la ejecución del script
     } catch (PDOException $e) {
-        echo "<p style='color:red;'>Error al registrar: " . $e->getMessage() . "</p>";
+        // Mostrar mensaje de error en un alert
+        echo "<script>
+                alert('⚠️ Error al registrar el usuario: " . $e->getMessage() . "');
+              </script>";
+        exit; // Detener la ejecución del script
     }
 }
 ?>
