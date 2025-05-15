@@ -312,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (tipo === 'success') {
         alert('✅ ' + mensaje);
       } else if (tipo === 'error') {
-        alert('❌ ' + mensaje);
+        alert('⚠️ ' + mensaje);
       } else {
         alert(mensaje);
       }

@@ -27,9 +27,38 @@ $isClienteView = $filtroPermiso === 'cliente';
     <meta charset="UTF-8">
     <title>Ver Usuarios</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .button-container {
+            margin: 20px 0;
+        }
+        .button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-right: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .home-button {
+            background-color: #2196F3;
+        }
+        .home-button:hover {
+            background-color: #0b7dda;
+        }
+    </style>
 </head>
 <body>
     <h1>Lista de Usuarios</h1>
+
+    <div class="button-container">
+        <a href="../home.php" class="button home-button">Volver al Inicio</a>
+        <a href="crearUsuarios.php" class="button">Crear Nuevo Usuario</a>
+    </div>
 
     <form method="get">
         <label for="permiso">Filtrar por Permiso:</label>
