@@ -91,7 +91,7 @@ try {
     $bd = new PDO(
         'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
 } catch (PDOException $e) {
-    echo "<p style='color:red;'>Error de conexión: " . $e->getMessage() . "</p>";
+    echo "<script>alert('Error de conexión: " . addslashes($e->getMessage()) . "');</script>";
     exit;
 }
 
@@ -107,7 +107,7 @@ if (isset($_POST['borrar']) && isset($_POST['numEquipo'])) {
         header("Location: ../home.php");
         exit;
     } catch (PDOException $e) {
-        echo "<p style='color:red;'>Error al borrar equipo: " . $e->getMessage() . "</p>";
+        echo "<script>alert('Error al borrar equipo: " . addslashes($e->getMessage()) . "');</script>";
         exit;
     }
 }
@@ -119,7 +119,7 @@ try {
     $stmtClientes->execute();
     $listaClientes = $stmtClientes->fetchAll();
 } catch (PDOException $e) {
-    echo "<p style='color:red;'>Error al cargar clientes: " . $e->getMessage() . "</p>";
+    echo "<script>alert('Error al cargar clientes: " . addslashes($e->getMessage()) . "');</script>";
     $listaClientes = [];
 }
 
@@ -152,7 +152,7 @@ if (!isset($_GET['id'])) {
         $stmt->execute($params);
         $equipos = $stmt->fetchAll();
     } catch (PDOException $e) {
-        echo "<p style='color:red;'>Error al obtener equipos: " . $e->getMessage() . "</p>";
+        echo "<script>alert('Error al obtener equipos: " . addslashes($e->getMessage()) . "');</script>";
         exit;
     }
     ?>
@@ -369,11 +369,11 @@ try {
     $stmt->execute([$numEquipoModificar]);
     $equipoData = $stmt->fetch();
     if (!$equipoData) {
-        echo "<p style='color:red;'>Equipo no encontrado.</p>";
+        echo "<script>alert('Equipo no encontrado.'); window.location.href='../home.php';</script>";
         exit;
     }
 } catch (PDOException $e) {
-    echo "<p style='color:red;'>Error al obtener el equipo: " . $e->getMessage() . "</p>";
+    echo "<script>alert('Error al obtener el equipo: " . addslashes($e->getMessage()) . "'); window.location.href='../home.php';</script>";
     exit;
 }
 
@@ -388,7 +388,7 @@ try {
     $stmtUsr->execute();
     $listaUsuarios = $stmtUsr->fetchAll();
 } catch (PDOException $e) {
-    echo "<p style='color:red;'>Error al cargar usuarios: " . $e->getMessage() . "</p>";
+    echo "<script>alert('Error al cargar usuarios: " . addslashes($e->getMessage()) . "'); window.location.href='../home.php';</script>";
     $listaUsuarios = [];
 }
 
@@ -404,119 +404,85 @@ $errores = [];
 $exito = false;
 
 if (isset($_POST['modificar'])) {
-    // Validar campos obligatorios
-    if (!isset($_POST['tipoEquipo']) || empty($_POST['tipoEquipo'])) {
-        $errores[] = "Debe seleccionar al menos un tipo de equipo";
-    }
+    // Errores se manejarán con JavaScript alerts en lugar de errores PHP
     
-    if (!isset($_POST['tipoMantenimiento']) || empty($_POST['tipoMantenimiento'])) {
-        $errores[] = "Debe seleccionar un tipo de mantenimiento";
-    }
+    $tipoEquipoArray = $_POST['tipoEquipo'] ?? [];
+    $tipoEquipo = count($tipoEquipoArray) > 0 ? $tipoEquipoArray[0] : $equipoData['tipoEquipo'];
     
-    if (!isset($_POST['cp']) || empty($_POST['cp'])) {
-        $errores[] = "El código postal es obligatorio";
-    } elseif (strlen($_POST['cp']) < 5) {
-        $errores[] = "El código postal debe tener al menos 5 dígitos";
-    }
-    
-    if (!isset($_POST['provincia']) || empty($_POST['provincia'])) {
-        $errores[] = "La provincia es obligatoria";
-    }
-    
-    if (!isset($_POST['localidad']) || empty($_POST['localidad'])) {
-        $errores[] = "La localidad es obligatoria";
-    }
-    
-    if (!isset($_POST['direccion']) || empty($_POST['direccion'])) {
-        $errores[] = "La dirección es obligatoria";
-    }
-    
-    if (!isset($_POST['idUsuario']) || empty($_POST['idUsuario'])) {
-        $errores[] = "Debe seleccionar un usuario";
-    }
-    
-    // Si no hay errores, proceder con la actualización
-    if (empty($errores)) {
-        $tipoEquipoArray = $_POST['tipoEquipo'] ?? [];
-        $tipoEquipo = count($tipoEquipoArray) > 0 ? $tipoEquipoArray[0] : $equipoData['tipoEquipo'];
-        
-        $marca             = obtenerValor('marca', $equipoData['marca']);
-        $modelo            = obtenerValor('modelo', $equipoData['modelo']);
-        $procesador        = obtenerValor('procesador', $equipoData['procesador']);
-        $memoria           = obtenerValor('memoria', $equipoData['memoria']);
-        $disco             = obtenerValor('disco', $equipoData['disco']);
-        $tipo              = obtenerValor('tipo', $equipoData['tipo']);
-        $placa             = obtenerValor('placa', $equipoData['placa']);
-        $serie             = obtenerValor('serie', $equipoData['serie']);
-        $ubicacion         = obtenerValor('ubicacion', $equipoData['ubicacion']);
-        $costo             = obtenerValor('costo', $equipoData['costo']);
-        $sistema           = obtenerValor('sistema', $equipoData['sistema']);
-        $pantalla          = obtenerValor('pantalla', $equipoData['pantalla']);
-        $observaciones     = obtenerValor('observaciones', $equipoData['observaciones']);
-        $tipoMantenimiento = obtenerValor('tipoMantenimiento', $equipoData['tipoMantenimiento']);
-        $cp                = obtenerValor('cp', $equipoData['cp']);
-        $provincia         = obtenerValor('provincia', $equipoData['provincia']);
-        $localidad         = obtenerValor('localidad', $equipoData['localidad']);
-        $direccion         = obtenerValor('direccion', $equipoData['direccion']);
-        $idUsuario         = obtenerValor('idUsuario', $equipoData['idUsuario']);
-        $fechaCompra       = obtenerValor('fechaCompra', $equipoData['fechaCompra'] ?? null);
+    $marca             = obtenerValor('marca', $equipoData['marca']);
+    $modelo            = obtenerValor('modelo', $equipoData['modelo']);
+    $procesador        = obtenerValor('procesador', $equipoData['procesador']);
+    $memoria           = obtenerValor('memoria', $equipoData['memoria']);
+    $disco             = obtenerValor('disco', $equipoData['disco']);
+    $tipo              = obtenerValor('tipo', $equipoData['tipo']);
+    $placa             = obtenerValor('placa', $equipoData['placa']);
+    $serie             = obtenerValor('serie', $equipoData['serie']);
+    $ubicacion         = obtenerValor('ubicacion', $equipoData['ubicacion']);
+    $costo             = obtenerValor('costo', $equipoData['costo']);
+    $sistema           = obtenerValor('sistema', $equipoData['sistema']);
+    $pantalla          = obtenerValor('pantalla', $equipoData['pantalla']);
+    $observaciones     = obtenerValor('observaciones', $equipoData['observaciones']);
+    $tipoMantenimiento = obtenerValor('tipoMantenimiento', $equipoData['tipoMantenimiento']);
+    $cp                = obtenerValor('cp', $equipoData['cp']);
+    $provincia         = obtenerValor('provincia', $equipoData['provincia']);
+    $localidad         = obtenerValor('localidad', $equipoData['localidad']);
+    $direccion         = obtenerValor('direccion', $equipoData['direccion']);
+    $idUsuario         = obtenerValor('idUsuario', $equipoData['idUsuario']);
+    $fechaCompra       = obtenerValor('fechaCompra', $equipoData['fechaCompra'] ?? null);
 
-        try {
-            $sqlUpdate = "UPDATE Equipos SET 
-                tipoEquipo = ?,
-                marca = ?,
-                modelo = ?,
-                procesador = ?,
-                memoria = ?,
-                disco = ?,
-                tipo = ?,
-                placa = ?,
-                serie = ?,
-                ubicacion = ?,
-                costo = ?,
-                sistema = ?,
-                pantalla = ?,
-                observaciones = ?,
-                tipoMantenimiento = ?,
-                cp = ?,
-                provincia = ?,
-                localidad = ?,
-                direccion = ?,
-                idUsuario = ?,
-                fechaCompra = ?
-                WHERE numEquipo = ?";
-            $stmtUpdate = $bd->prepare($sqlUpdate);
-            $stmtUpdate->execute([
-                $tipoEquipo,
-                $marca,
-                $modelo,
-                $procesador,
-                $memoria,
-                $disco,
-                $tipo,
-                $placa,
-                $serie,
-                $ubicacion,
-                $costo,
-                $sistema,
-                $pantalla,
-                $observaciones,
-                $tipoMantenimiento,
-                $cp,
-                $provincia,
-                $localidad,
-                $direccion,
-                $idUsuario,
-                $fechaCompra,
-                $numEquipoModificar
-            ]);
-            $exito = true;
-            // Redireccionar al home después de una modificación exitosa
-            header("Location: ../home.php");
-            exit;
-        } catch (PDOException $e) {
-            $errores[] = "Error al modificar equipo: " . $e->getMessage();
-        }
+    try {
+        $sqlUpdate = "UPDATE Equipos SET 
+            tipoEquipo = ?,
+            marca = ?,
+            modelo = ?,
+            procesador = ?,
+            memoria = ?,
+            disco = ?,
+            tipo = ?,
+            placa = ?,
+            serie = ?,
+            ubicacion = ?,
+            costo = ?,
+            sistema = ?,
+            pantalla = ?,
+            observaciones = ?,
+            tipoMantenimiento = ?,
+            cp = ?,
+            provincia = ?,
+            localidad = ?,
+            direccion = ?,
+            idUsuario = ?,
+            fechaCompra = ?
+            WHERE numEquipo = ?";
+        $stmtUpdate = $bd->prepare($sqlUpdate);
+        $stmtUpdate->execute([
+            $tipoEquipo,
+            $marca,
+            $modelo,
+            $procesador,
+            $memoria,
+            $disco,
+            $tipo,
+            $placa,
+            $serie,
+            $ubicacion,
+            $costo,
+            $sistema,
+            $pantalla,
+            $observaciones,
+            $tipoMantenimiento,
+            $cp,
+            $provincia,
+            $localidad,
+            $direccion,
+            $idUsuario,
+            $fechaCompra,
+            $numEquipoModificar
+        ]);
+        echo "<script>alert('✅ Equipo modificado correctamente.'); window.location.href='../home.php';</script>";
+        exit;
+    } catch (PDOException $e) {
+        echo "<script>alert('⚠️ Error al modificar equipo: " . addslashes($e->getMessage()) . "');</script>";
     }
 }
 ?>
@@ -528,18 +494,6 @@ if (isset($_POST['modificar'])) {
     <title>Modificar Equipo</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        .error-message {
-            color: red;
-            margin: 5px 0;
-        }
-        .error-input {
-            border: 2px solid red;
-        }
-        .success-message {
-            color: green;
-            margin: 10px 0;
-            font-weight: bold;
-        }
         .button-container {
             display: flex;
             gap: 10px;
@@ -578,213 +532,395 @@ if (isset($_POST['modificar'])) {
         .cancel-button:hover {
             background-color: #bbb;
         }
+        /* Añadido para destacar campos con errores */
+        .error-input {
+            border: 2px solid #f44336 !important;
+            background-color: #ffe6e6 !important;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
     </style>
     <script>
-      function autocompletarDireccion() {
-        const selectUser = document.getElementById('idUsuario');
-        const selectedOption = selectUser.options[selectUser.selectedIndex];
-        const dirType = document.getElementById('tipoDireccion').value;
-        if (!selectedOption || selectedOption.value === "") {
-          document.getElementById('cp').value = "";
-          document.getElementById('provincia').value = "";
-          document.getElementById('localidad').value = "";
-          document.getElementById('direccion').value = "";
-          return;
-        }
-        
-        let cp = "";
-        let provincia = "";
-        let localidad = "";
-        let direccion = "";
-        
-        if (dirType === "fiscal") {
-          cp = selectedOption.getAttribute('data-cpfiscal') || "";
-          provincia = selectedOption.getAttribute('data-provinciafiscal') || "";
-          localidad = selectedOption.getAttribute('data-localidadfiscal') || "";
-          direccion = selectedOption.getAttribute('data-direccionfiscal') || "";
-        } else if (dirType === "1") {
-          cp = selectedOption.getAttribute('data-cp1') || "";
-          provincia = selectedOption.getAttribute('data-provincia1') || "";
-          localidad = selectedOption.getAttribute('data-localidad1') || "";
-          direccion = selectedOption.getAttribute('data-direccion1') || "";
-        } else if (dirType === "2") {
-          cp = selectedOption.getAttribute('data-cp2') || "";
-          provincia = selectedOption.getAttribute('data-provincia2') || "";
-          localidad = selectedOption.getAttribute('data-localidad2') || "";
-          direccion = selectedOption.getAttribute('data-direccion2') || "";
-        }
-        
-        document.getElementById('cp').value = cp;
-        document.getElementById('provincia').value = provincia;
-        document.getElementById('localidad').value = localidad;
-        document.getElementById('direccion').value = direccion;
-        
-        // Validar CP después de autocompletar
-        validarCP(document.getElementById('cp'));
-      }
-
-      function actualizarCampos() {
-        const select = document.getElementsByName('tipoEquipo[]')[0];
-        let values = Array.from(select.selectedOptions).map(opt => opt.value);
-        const grupos = [
-          'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador',
-          'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones',
-          'grupo-costo', 'grupo-sistema', 'grupo-ubicacion', 'grupo-tipo'
-        ];
-        
-        // Ocultar todos los grupos primero
-        grupos.forEach(function(id) {
-          const elem = document.getElementById(id);
-          if (elem) { elem.style.display = 'none'; }
-        });
-        
-        // Si no hay tipo seleccionado, no mostrar nada
-        if (!values.length) return;
-        
-        let tipoEquipo = values[0];
-        
-        // Usar los tipos de equipo definidos en PHP
-        const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
-        
-        // Verificar si existe el tipo y tiene campos definidos
-        if (tiposEquipo[tipoEquipo] && tiposEquipo[tipoEquipo].campos) {
-          // Mostrar solo los campos correspondientes al tipo seleccionado
-          tiposEquipo[tipoEquipo].campos.forEach(function(campo) {
-            const elemento = document.getElementById('grupo-'+campo);
-            if (elemento) {
-              elemento.style.display = 'block';
+       function autocompletarDireccion() {
+            const selectUser = document.getElementById('idUsuario');
+            const selectedOption = selectUser.options[selectUser.selectedIndex];
+            const dirType = document.getElementById('tipoDireccion').value;
+            
+            if (!selectedOption || selectedOption.value === "") {
+                document.getElementById('cp').value = "";
+                document.getElementById('provincia').value = "";
+                document.getElementById('localidad').value = "";
+                document.getElementById('direccion').value = "";
+                return;
             }
-          });
+            
+            let cp = "";
+            let provincia = "";
+            let localidad = "";
+            let direccion = "";
+            
+            if (dirType === "fiscal") {
+                cp = selectedOption.getAttribute('data-cpfiscal') || "";
+                provincia = selectedOption.getAttribute('data-provinciafiscal') || "";
+                localidad = selectedOption.getAttribute('data-localidadfiscal') || "";
+                direccion = selectedOption.getAttribute('data-direccionfiscal') || "";
+            } else if (dirType === "1") {
+                cp = selectedOption.getAttribute('data-cp1') || "";
+                provincia = selectedOption.getAttribute('data-provincia1') || "";
+                localidad = selectedOption.getAttribute('data-localidad1') || "";
+                direccion = selectedOption.getAttribute('data-direccion1') || "";
+            } else if (dirType === "2") {
+                cp = selectedOption.getAttribute('data-cp2') || "";
+                provincia = selectedOption.getAttribute('data-provincia2') || "";
+                localidad = selectedOption.getAttribute('data-localidad2') || "";
+                direccion = selectedOption.getAttribute('data-direccion2') || "";
+            }
+            
+            document.getElementById('cp').value = cp;
+            document.getElementById('provincia').value = provincia;
+            document.getElementById('localidad').value = localidad;
+            document.getElementById('direccion').value = direccion;
         }
-      }
-      
-      // Validación del CP
-      function validarCP(input) {
-        const errorDiv = document.getElementById('cp-error');
-        if (input.value.length < 5) {
-          input.classList.add('error-input');
-          errorDiv.textContent = 'El código postal debe tener al menos 5 dígitos';
-          errorDiv.style.display = 'block';
-          return false;
-        } else {
-          input.classList.remove('error-input');
-          errorDiv.style.display = 'none';
-          return true;
+
+        function actualizarCampos() {
+            const select = document.getElementsByName('tipoEquipo[]')[0];
+            let values = Array.from(select.selectedOptions).map(opt => opt.value);
+            const grupos = [
+                'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador',
+                'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones',
+                'grupo-costo', 'grupo-sistema', 'grupo-ubicacion', 'grupo-tipo'
+            ];
+            
+            // Ocultar todos los grupos primero
+            grupos.forEach(function(id) {
+                const elem = document.getElementById(id);
+                if (elem) { elem.style.display = 'none'; }
+            });
+            
+            // Si no hay tipo seleccionado, no mostrar nada
+            if (!values.length) return;
+            
+            let tipoEquipo = values[0];
+            
+            // Usar los tipos de equipo definidos en PHP
+            const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
+            
+            // Verificar si existe el tipo y tiene campos definidos
+            if (tiposEquipo[tipoEquipo] && tiposEquipo[tipoEquipo].campos) {
+                // Mostrar solo los campos correspondientes al tipo seleccionado
+                tiposEquipo[tipoEquipo].campos.forEach(function(campo) {
+                const elemento = document.getElementById('grupo-'+campo);
+                if (elemento) {
+                    elemento.style.display = 'block';
+                }
+                });
+            }
         }
-      }
-      
-      // Validar formulario completo antes de enviar
-      function validateForm() {
-        let isValid = true;
-        const errores = [];
-        
-        // Validar tipo de equipo
-        const tipoEquipo = document.getElementsByName('tipoEquipo[]')[0];
-        if (tipoEquipo.selectedOptions.length === 0) {
-          errores.push("Debe seleccionar al menos un tipo de equipo");
-          tipoEquipo.classList.add('error-input');
-          isValid = false;
-        } else {
-          tipoEquipo.classList.remove('error-input');
+
+        // Helper function para validar formatos de fecha
+        function isValidDate(dateString) {
+            // Comprobar si la fecha es válida usando el objeto Date
+            const dateObj = new Date(dateString);
+            return !isNaN(dateObj.getTime());
         }
-        
-        // Validar tipo de mantenimiento
-        const tipoMantenimiento = document.getElementsByName('tipoMantenimiento')[0];
-        if (tipoMantenimiento.value === "") {
-          errores.push("Debe seleccionar un tipo de mantenimiento");
-          tipoMantenimiento.classList.add('error-input');
-          isValid = false;
-        } else {
-          tipoMantenimiento.classList.remove('error-input');
+
+        // Validación mejorada para entradas de moneda/costo
+        function validarCosto(input) {
+            if (input.value !== "" && (isNaN(parseFloat(input.value)) || parseFloat(input.value) < 0)) {
+                alert("El costo debe ser un número válido mayor o igual a cero");
+                input.classList.add('error-input');
+                return false;
+            }
+            input.classList.remove('error-input');
+            return true;
         }
-        
-        // Validar CP
-        const cp = document.getElementById('cp');
-        if (cp.value === "" || cp.value.length < 5) {
-          errores.push("El código postal debe tener al menos 5 dígitos");
-          cp.classList.add('error-input');
-          isValid = false;
-        } else {
-          cp.classList.remove('error-input');
+
+        // Validar longitud mínima de texto
+        function validarTextoMinimo(input, minLength, fieldName) {
+            if (input.value.trim() !== "" && input.value.trim().length < minLength) {
+                alert(`El campo ${fieldName} debe tener al menos ${minLength} caracteres`);
+                input.classList.add('error-input');
+                return false;
+            }
+            input.classList.remove('error-input');
+            return true;
         }
-        
-        // Validar provincia
-        const provincia = document.getElementById('provincia');
-        if (provincia.value.trim() === "") {
-          errores.push("La provincia es obligatoria");
-          provincia.classList.add('error-input');
-          isValid = false;
-        } else {
-          provincia.classList.remove('error-input');
+
+        // Validar campos obligatorios
+        function validarCampoRequerido(input, fieldName) {
+            if (input.value.trim() === "") {
+                alert(`El campo ${fieldName} es obligatorio`);
+                input.classList.add('error-input');
+                return false;
+            }
+            input.classList.remove('error-input');
+            return true;
         }
-        
-        // Validar localidad
-        const localidad = document.getElementById('localidad');
-        if (localidad.value.trim() === "") {
-          errores.push("La localidad es obligatoria");
-          localidad.classList.add('error-input');
-          isValid = false;
-        } else {
-          localidad.classList.remove('error-input');
+
+        // Validar elementos select
+        function validarSelect(input, fieldName) {
+            if (input.value === "") {
+                alert(`Debe seleccionar ${fieldName}`);
+                input.classList.add('error-input');
+                return false;
+            }
+            input.classList.remove('error-input');
+            return true;
         }
-        
-        // Validar dirección
-        const direccion = document.getElementById('direccion');
-        if (direccion.value.trim() === "") {
-          errores.push("La dirección es obligatoria");
-          direccion.classList.add('error-input');
-          isValid = false;
-        } else {
-          direccion.classList.remove('error-input');
+
+        // Validar elementos multi-select
+        function validarMultiSelect(input, fieldName) {
+            if (input.selectedOptions.length === 0) {
+                alert(`Debe seleccionar al menos una opción en ${fieldName}`);
+                input.classList.add('error-input');
+                return false;
+            }
+            input.classList.remove('error-input');
+            return true;
         }
-        
-        // Validar usuario
-        const idUsuario = document.getElementById('idUsuario');
-        if (idUsuario.value === "") {
-          errores.push("Debe seleccionar un usuario");
-          idUsuario.classList.add('error-input');
-          isValid = false;
-        } else {
-          idUsuario.classList.remove('error-input');
+
+        // Función para limpiar errores de campos específicos
+        function clearFieldError(input) {
+            input.classList.remove('error-input');
         }
-        
-        // Mostrar errores si los hay
-        const errorSummary = document.getElementById('error-summary');
-        if (!isValid) {
-          errorSummary.innerHTML = "";
-          errores.forEach(function(error) {
-            const errorItem = document.createElement('div');
-            errorItem.classList.add('error-message');
-            errorItem.textContent = error;
-            errorSummary.appendChild(errorItem);
-          });
-          errorSummary.style.display = 'block';
-          window.scrollTo(0, 0);
-        } else {
-          errorSummary.style.display = 'none';
+
+        // Función para validar campo específico cuando cambia
+        function validarCampoOnChange(input, tipo, nombreCampo) {
+            const fieldName = nombreCampo || input.name;
+            switch(tipo) {
+                case 'cp':
+                    return validarCP(input);
+                case 'costo':
+                    return validarCosto(input);
+                case 'texto':
+                    return validarTextoMinimo(input, 3, fieldName);
+                case 'requerido':
+                    return validarCampoRequerido(input, fieldName);
+                case 'select':
+                    return validarSelect(input, fieldName);
+                default:
+                    return true;
+            }
         }
-        
-        return isValid;
-      }
+
+        // Resetear todos los errores del formulario
+        function resetFormErrors() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.classList.remove('error-input');
+            });
+        }
+
+        // Función para confirmar antes de enviar el formulario
+        function confirmarModificacion() {
+            if (validateForm()) {
+                return confirm("¿Está seguro que desea modificar este equipo?");
+            }
+            return false;
+        }
+
+        // Función mejorada de validateForm con validaciones más específicas
+        function validateForm() {
+            let isValid = true;
+            resetFormErrors();
+            
+            // Validar tipo de equipo
+            const tipoEquipo = document.getElementsByName('tipoEquipo[]')[0];
+            if (!validarMultiSelect(tipoEquipo, "Tipo de Equipo")) {
+                isValid = false;
+            }
+            
+            // Validar fecha de compra (opcional)
+            const fechaCompra = document.getElementById('fechaCompra');
+            if (fechaCompra.value !== "" && !isValidDate(fechaCompra.value)) {
+                alert("El formato de fecha de compra no es válido");
+                isValid = false;
+                fechaCompra.classList.add('error-input');
+            }
+            
+            // Validar tipo de mantenimiento
+            const tipoMantenimiento = document.getElementsByName('tipoMantenimiento')[0];
+            if (!validarSelect(tipoMantenimiento, "un tipo de mantenimiento")) {
+                isValid = false;
+            }
+            
+            // Validar CP
+            const cp = document.getElementById('cp');
+            if (!validarCP(cp)) {
+                isValid = false;
+            }
+            
+            // Validar provincia
+            const provincia = document.getElementById('provincia');
+            if (!validarCampoRequerido(provincia, "Provincia")) {
+                isValid = false;
+            }
+            
+            // Validar localidad
+            const localidad = document.getElementById('localidad');
+            if (!validarCampoRequerido(localidad, "Localidad")) {
+                isValid = false;
+            }
+            
+            // Validar dirección
+            const direccion = document.getElementById('direccion');
+            if (!validarCampoRequerido(direccion, "Dirección")) {
+                isValid = false;
+            }
+            
+            // Validar usuario
+            const idUsuario = document.getElementById('idUsuario');
+            if (!validarSelect(idUsuario, "un usuario")) {
+                isValid = false;
+            }
+            
+            // Validar campos específicos según el tipo de equipo seleccionado
+            if (tipoEquipo.selectedOptions.length > 0) {
+                const selectedEquipo = tipoEquipo.selectedOptions[0].value;
+                const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
+                
+                if (tiposEquipo[selectedEquipo] && tiposEquipo[selectedEquipo].campos) {
+                const camposRequeridos = tiposEquipo[selectedEquipo].camposRequeridos || [];
+                
+                // Validar campos requeridos específicos por tipo
+                camposRequeridos.forEach(function(campo) {
+                    const input = document.getElementsByName(campo)[0];
+                    if (input && !validarCampoRequerido(input, campo)) {
+                    isValid = false;
+                    }
+                });
+                
+                // Validar costo si está visible
+                const costoDiv = document.getElementById('grupo-costo');
+                if (costoDiv && costoDiv.style.display !== 'none') {
+                    const costo = document.getElementsByName('costo')[0];
+                    if (costo && !validarCosto(costo)) {
+                    isValid = false;
+                    }
+                }
+                }
+            }
+            
+            return isValid;
+        }
+
+        // Función mejorada para validar CP con mensajes de alerta
+        function validarCP(input) {
+            if (input.value.trim() === "") {
+                alert("El código postal es obligatorio");
+                input.classList.add('error-input');
+                return false;
+            } else if (input.value.length < 5) {
+                alert("El código postal debe tener al menos 5 dígitos");
+                input.classList.add('error-input');
+                return false;
+            } else if (!/^\d+$/.test(input.value)) {
+                alert("El código postal debe contener solo números");
+                input.classList.add('error-input');
+                return false;
+            }
+            input.classList.remove('error-input');
+            return true;
+        }
+
+        // Inicializar todas las validaciones cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar el formulario
+            actualizarCampos();
+            
+            // Cargar la dirección basada en la selección inicial
+            const tipoDireccion = document.getElementById('tipoDireccion');
+            if (tipoDireccion.value) {
+                autocompletarDireccion();
+            }
+            
+            // Configurar validación del formulario
+            const form = document.querySelector('form');
+            if (form) {
+                // Usar onsubmit en lugar de addEventListener para mantener compatibilidad
+                form.onsubmit = function(event) {
+                    return validateForm() && confirm("¿Está seguro que desea modificar este equipo?");
+                };
+            }
+            
+            // Agregar validación en tiempo real para todos los campos importantes
+            // Validar CP
+            const cpInput = document.getElementById('cp');
+            if (cpInput) {
+                cpInput.addEventListener('blur', function() {
+                    validarCP(this);
+                });
+            }
+            
+            // Validar costo
+            const costoInput = document.getElementsByName('costo')[0];
+            if (costoInput) {
+                costoInput.addEventListener('blur', function() {
+                    validarCosto(this);
+                });
+            }
+            
+            // Validar campos requeridos
+            const camposRequeridos = [
+                { id: 'provincia', tipo: 'requerido', nombre: 'Provincia' },
+                { id: 'localidad', tipo: 'requerido', nombre: 'Localidad' },
+                { id: 'direccion', tipo: 'requerido', nombre: 'Dirección' }
+            ];
+            
+            camposRequeridos.forEach(function(campo) {
+                const elemento = document.getElementById(campo.id);
+                if (elemento) {
+                    elemento.addEventListener('blur', function() {
+                        validarCampoOnChange(this, campo.tipo, campo.nombre);
+                    });
+                }
+            });
+            
+            // Validar selects
+            const selects = [
+                { name: 'tipoMantenimiento', tipo: 'select', nombre: 'un tipo de mantenimiento' },
+                { id: 'idUsuario', tipo: 'select', nombre: 'un usuario' }
+            ];
+            
+            selects.forEach(function(sel) {
+                let elemento;
+                if (sel.id) {
+                    elemento = document.getElementById(sel.id);
+                } else if (sel.name) {
+                    elemento = document.getElementsByName(sel.name)[0];
+                }
+                
+                if (elemento) {
+                    elemento.addEventListener('change', function() {
+                        validarCampoOnChange(this, sel.tipo, sel.nombre);
+                    });
+                }
+            });
+            
+            // Validar multiselect
+            const tipoEquipo = document.getElementsByName('tipoEquipo[]')[0];
+            if (tipoEquipo) {
+                tipoEquipo.addEventListener('change', function() {
+                    validarMultiSelect(this, "Tipo de Equipo");
+                    // Actualizar campos visibles basados en la selección
+                    actualizarCampos();
+                });
+            }
+        });
     </script>
 </head>
 <body onload="actualizarCampos()">
     <h1>Modificar Equipo</h1>
     
-    <!-- Mensajes de error -->
-    <div id="error-summary" style="display: <?= !empty($errores) ? 'block' : 'none' ?>">
-        <?php foreach ($errores as $error): ?>
-            <div class="error-message"><?= htmlspecialchars($error) ?></div>
-        <?php endforeach; ?>
-    </div>
+    <p><strong>Número de Equipo:</strong> 001</p>
+    <p><strong>Fecha de Alta:</strong> 12/05/2025</p>
     
-    <p><strong>Número de Equipo:</strong> <?= htmlspecialchars($equipoData['numEquipo']); ?></p>
-    <p><strong>Fecha de Alta:</strong> <?= htmlspecialchars($equipoData['fechaAlta']); ?></p>
-    
-    <form method="post" action="" onsubmit="return validateForm()">
+    <form method="post" action="" onsubmit="return validateForm() && confirm('¿Está seguro que desea modificar este equipo?')">
         <label>Tipo de Equipo:</label><br/>
-        <select name="tipoEquipo[]" multiple onchange="actualizarCampos()" required
-                class="<?= isset($errores['tipoEquipo']) ? 'error-input' : '' ?>">
+        <select name="tipoEquipo[]" multiple onchange="actualizarCampos()" required>
             <option value="">-- Seleccione --</option>
             <?php foreach ($tiposEquipo as $val => $info): ?>
                 <option value="<?= htmlspecialchars($val) ?>"
@@ -797,75 +933,75 @@ if (isset($_POST['modificar'])) {
 
         <!-- Nuevo campo Fecha de Compra -->
         <label>Fecha de Compra:</label><br/>
-        <input type="date" name="fechaCompra" value="<?= htmlspecialchars($equipoData['fechaCompra'] ?? ''); ?>"><br/><br/>
+        <input type="date" id="fechaCompra" name="fechaCompra" value=""><br/><br/>
 
         <div id="grupo-marca" style="display:none;">
             <label>Marca:</label><br/>
-            <input type="text" name="marca" value="<?= htmlspecialchars($equipoData['marca']); ?>"><br/><br/>
+            <input type="text" name="marca" value=""><br/><br/>
         </div>
 
         <div id="grupo-modelo" style="display:none;">
             <label>Modelo:</label><br/>
-            <input type="text" name="modelo" value="<?= htmlspecialchars($equipoData['modelo']); ?>"><br/><br/>
+            <input type="text" name="modelo" value=""><br/><br/>
         </div>
 
         <div id="grupo-serie" style="display:none;">
             <label>Serie:</label><br/>
-            <input type="text" name="serie" value="<?= htmlspecialchars($equipoData['serie']); ?>"><br/><br/>
+            <input type="text" name="serie" value=""><br/><br/>
         </div>
 
         <div id="grupo-placa" style="display:none;">
             <label>Placa:</label><br/>
-            <input type="text" name="placa" value="<?= htmlspecialchars($equipoData['placa']); ?>"><br/><br/>
+            <input type="text" name="placa" value=""><br/><br/>
         </div>
 
         <div id="grupo-procesador" style="display:none;">
             <label>Procesador:</label><br/>
-            <input type="text" name="procesador" value="<?= htmlspecialchars($equipoData['procesador']); ?>"><br/><br/>
+            <input type="text" name="procesador" value=""><br/><br/>
         </div>
 
         <div id="grupo-memoria" style="display:none;">
             <label>Memoria:</label><br/>
-            <input type="text" name="memoria" value="<?= htmlspecialchars($equipoData['memoria']); ?>"><br/><br/>
+            <input type="text" name="memoria" value=""><br/><br/>
         </div>
 
         <div id="grupo-disco" style="display:none;">
             <label>Disco:</label><br/>
-            <input type="text" name="disco" value="<?= htmlspecialchars($equipoData['disco']); ?>"><br/><br/>
+            <input type="text" name="disco" value=""><br/><br/>
         </div>
 
         <div id="grupo-pantalla" style="display:none;">
             <label>Pantalla:</label><br/>
-            <input type="text" name="pantalla" value="<?= htmlspecialchars($equipoData['pantalla']); ?>"><br/><br/>
+            <input type="text" name="pantalla" value=""><br/><br/>
         </div>
 
         <div id="grupo-observaciones" style="display:none;">
             <label>Observaciones:</label><br/>
-            <textarea name="observaciones"><?= htmlspecialchars($equipoData['observaciones']); ?></textarea><br/><br/>
+            <textarea name="observaciones"></textarea><br/><br/>
         </div>
 
         <div id="grupo-costo" style="display:none;">
             <label>Costo:</label><br/>
-            <input type="number" step="0.01" name="costo" value="<?= htmlspecialchars($equipoData['costo']); ?>"><br/><br/>
+            <input type="number" step="0.01" name="costo" value=""><br/><br/>
         </div>
 
         <div id="grupo-sistema" style="display:none;">
             <label>Sistema:</label><br/>
-            <input type="text" name="sistema" value="<?= htmlspecialchars($equipoData['sistema']); ?>"><br/><br/>
+            <input type="text" name="sistema" value=""><br/><br/>
         </div>
 
         <div id="grupo-ubicacion" style="display:none;">
             <label>Ubicación:</label><br/>
-            <input type="text" name="ubicacion" value="<?= htmlspecialchars($equipoData['ubicacion']); ?>"><br/><br/>
+            <input type="text" name="ubicacion" value=""><br/><br/>
         </div>
 
         <div id="grupo-tipo" style="display:none;">
             <label>Tipo (Especifique):</label><br/>
-            <input type="text" name="tipo" value="<?= htmlspecialchars($equipoData['tipo']); ?>"><br/><br/>
+            <input type="text" name="tipo" value=""><br/><br/>
         </div>
 
         <label>Tipo de Pago:</label><br/>
-        <select name="tipoMantenimiento" required class="<?= isset($errores['tipoMantenimiento']) ? 'error-input' : '' ?>">
+        <select name="tipoMantenimiento" required>
             <option value="">-- Seleccione --</option>
             <?php foreach ($tiposMantenimiento as $val => $info): ?>
                 <option value="<?= htmlspecialchars($val) ?>" 
@@ -877,27 +1013,21 @@ if (isset($_POST['modificar'])) {
         <br/><br/>
 
         <label>Código Postal:</label><br/>
-        <input type="text" id="cp" name="cp" value="<?= htmlspecialchars($equipoData['cp']); ?>" 
-               required minlength="5" oninput="validarCP(this)" 
-               class="<?= isset($errores['cp']) ? 'error-input' : '' ?>">
+        <input type="text" id="cp" name="cp" value="" required minlength="5">
         <div id="cp-error" class="error-message" style="display: none;"></div>
         <br/><br/>
 
         <label>Provincia:</label><br/>
-        <input type="text" id="provincia" name="provincia" value="<?= htmlspecialchars($equipoData['provincia']); ?>" 
-               required class="<?= isset($errores['provincia']) ? 'error-input' : '' ?>"><br/><br/>
+        <input type="text" id="provincia" name="provincia" value="" required><br/><br/>
 
         <label>Localidad:</label><br/>
-        <input type="text" id="localidad" name="localidad" value="<?= htmlspecialchars($equipoData['localidad']); ?>" 
-               required class="<?= isset($errores['localidad']) ? 'error-input' : '' ?>"><br/><br/>
+        <input type="text" id="localidad" name="localidad" value="" required><br/><br/>
 
         <label>Dirección:</label><br/>
-        <input type="text" id="direccion" name="direccion" value="<?= htmlspecialchars($equipoData['direccion']); ?>" 
-               required class="<?= isset($errores['direccion']) ? 'error-input' : '' ?>"><br/><br/>
+        <input type="text" id="direccion" name="direccion" value="" required><br/><br/>
 
         <label>Seleccione el Cliente:</label><br/>
-        <select id="idUsuario" name="idUsuario" onchange="autocompletarDireccion()" 
-                required class="<?= isset($errores['idUsuario']) ? 'error-input' : '' ?>">
+        <select id="idUsuario" name="idUsuario" onchange="autocompletarDireccion()" required>
             <option value="">-- Selecciona un Cliente --</option>
             <?php foreach ($listaUsuarios as $usr): ?>
                 <option 
