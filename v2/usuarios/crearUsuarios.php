@@ -75,7 +75,7 @@ if (isset($_POST['registrar'])) {
     <meta charset="UTF-8">
     <title>Registro de Usuarios</title>
     <link rel="stylesheet" href="../css/style.css">
-
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <script>
       // Mostrar/ocultar direcciones + asignar/quitar "required"
       function toggleCampos() {

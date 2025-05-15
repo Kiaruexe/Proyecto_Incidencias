@@ -239,6 +239,7 @@ if (isset($_GET['id'])) {
     <meta charset="UTF-8">
     <title>Seleccionar Usuario a Modificar</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <style>
         body {
             font-family: Arial, sans-serif;

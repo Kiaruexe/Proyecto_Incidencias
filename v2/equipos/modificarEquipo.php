@@ -493,6 +493,7 @@ if (isset($_POST['modificar'])) {
     <meta charset="UTF-8">
     <title>Modificar Equipo</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <style>
         .button-container {
             display: flex;

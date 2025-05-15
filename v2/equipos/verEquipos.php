@@ -212,6 +212,7 @@ function formatearTipoMantenimiento($clave) {
     <meta charset="UTF-8">
     <title>Ver Equipos</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <style>
         table {
             width: 100%;

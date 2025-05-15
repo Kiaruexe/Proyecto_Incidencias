@@ -27,6 +27,7 @@ $isClienteView = $filtroPermiso === 'cliente';
     <meta charset="UTF-8">
     <title>Ver Usuarios</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <style>
         .button-container {
             margin: 20px 0;

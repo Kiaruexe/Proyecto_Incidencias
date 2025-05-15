@@ -303,6 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Registro de Equipos</title>
   <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
   <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
   <script>
     // Función para mostrar alertas
     function mostrarAlerta(mensaje, tipo, redirigir = false) {
