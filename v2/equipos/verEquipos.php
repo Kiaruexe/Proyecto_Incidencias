@@ -299,7 +299,7 @@ function formatearTipoMantenimiento($clave) {
                 <?php endforeach; ?>
             </select>
 
-            <label for="tipoMantenimiento">Tipo de Mantenimiento:</label>
+            <label for="tipoMantenimiento">Tipo de Pago:</label>
             <select name="tipoMantenimiento">
                 <option value="" <?= $filtroMantenimiento=='' ? 'selected' : ''; ?>>Todos</option>
                 <?php foreach ($tiposMantenimiento as $val => $info): ?>

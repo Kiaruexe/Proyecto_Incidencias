@@ -264,11 +264,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
     
     <?php if (!empty($mensaje)): ?>
-        <div class="mensaje exito"><?= htmlspecialchars($mensaje) ?></div>
+        <script>
+            alert("<?= addslashes($mensaje) ?>");
+        </script>
     <?php endif; ?>
     
     <?php if (!empty($error)): ?>
-        <div class="mensaje error"><?= htmlspecialchars($error) ?></div>
+        <script>
+            alert("Error: <?= addslashes($error) ?>");
+        </script>
     <?php endif; ?>
     
     <h2>Tipos de Pago Existentes</h2>
@@ -292,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td><?= htmlspecialchars($datos['label']) ?></td>
                         <td><?= htmlspecialchars($datos['descripcion'] ?? '') ?></td>
                         <td>
-                            <button class="accion" onclick="mostrarFormularioEdicion('<?= htmlspecialchars($valor) ?>', '<?= htmlspecialchars($datos['label']) ?>', '<?= htmlspecialchars($datos['descripcion'] ?? '') ?>')">Editar</button>
+                            <button class="accion" onclick="mostrarFormularioEdicion('<?= htmlspecialchars(addslashes($valor)) ?>', '<?= htmlspecialchars(addslashes($datos['label'])) ?>', '<?= htmlspecialchars(addslashes($datos['descripcion'] ?? '')) ?>')">Editar</button>
                             
                             <?php if (!in_array($valor, ['mantenimientoCompleto', 'mantenimientoManoObra', 'mantenimientoFacturable', 'mantenimientoGarantia'])): ?>
                                 <form method="post" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este tipo de Pago?');">
@@ -307,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
     
     <h2>Agregar Nuevo Tipo de Pago</h2>
-    <form method="post" action="">
+    <form method="post" action="" id="agregar-form" onsubmit="return validarFormulario()">
         <div class="form-group">
             <label for="valor">Valor (identificador único):</label>
             <input type="text" id="valor" name="valor" pattern="[a-z0-9_]+" 
@@ -331,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <div id="formulario-edicion" class="edit-form">
         <h3 id="titulo-edicion">Editar tipo de Pago</h3>
-        <form method="post" action="">
+        <form method="post" action="" id="editar-form" onsubmit="return validarFormularioEdicion()">
             <input type="hidden" id="tipo_editar" name="tipo_editar" value="">
             
             <div class="form-group">
@@ -347,5 +351,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </form>
     </div>
+
+    <script>
+        // Validación del formulario de agregar
+        function validarFormulario() {
+            var valor = document.getElementById('valor').value.trim();
+            var etiqueta = document.getElementById('etiqueta').value.trim();
+            
+            if (valor === '') {
+                alert('El campo Valor es obligatorio.');
+                return false;
+            }
+            
+            if (etiqueta === '') {
+                alert('El campo Etiqueta es obligatorio.');
+                return false;
+            }
+            
+            // Validar que solo contenga letras minúsculas, números y guiones bajos
+            var pattern = /^[a-z0-9_]+$/;
+            if (!pattern.test(valor)) {
+                alert('El valor solo puede contener letras minúsculas, números y guiones bajos.');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Validación del formulario de edición
+        function validarFormularioEdicion() {
+            var etiqueta = document.getElementById('nueva_etiqueta').value.trim();
+            
+            if (etiqueta === '') {
+                alert('El campo Etiqueta es obligatorio.');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Mostrar errores de PHP como alertas
+        window.onload = function() {
+            <?php if (!empty($error)): ?>
+                alert("Error: <?= addslashes($error) ?>");
+            <?php endif; ?>
+            
+            <?php if (!empty($mensaje)): ?>
+                alert("<?= addslashes($mensaje) ?>");
+            <?php endif; ?>
+        };
+    </script>
 </body>
 </html>

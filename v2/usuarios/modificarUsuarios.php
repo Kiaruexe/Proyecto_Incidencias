@@ -5,6 +5,36 @@ if (!isset($_SESSION['idUsuario'])) {
     exit;
 }
 
+// Procesar solicitud de borrado AJAX si es recibida
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'borrarUsuario' && isset($_POST['id'])) {
+    try {
+        $bd = new PDO(
+            'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62' );
+        $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        $idUsuario = $_POST['id'];
+        
+        // Preparar y ejecutar la consulta de eliminación
+        $sql = "DELETE FROM Usuarios WHERE idUsuarios = ?";
+        $stmt = $bd->prepare($sql);
+        $resultado = $stmt->execute([$idUsuario]);
+        
+        // Devolver respuesta JSON
+        header('Content-Type: application/json');
+        if ($resultado) {
+            echo json_encode(['success' => true, 'message' => 'Usuario eliminado correctamente']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo eliminar el usuario']);
+        }
+        exit;
+    } catch (PDOException $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Error al eliminar usuario: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
+// Conexión a la base de datos para operaciones normales
 try {
     $bd = new PDO(
         'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62' );
@@ -345,10 +375,26 @@ if (isset($_GET['id'])) {
             border-radius: 5px;
             margin: 10px 0;
         }
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <h1>Seleccionar Usuario a Modificar</h1>
+    
+    <div id="loader" class="loader"></div>
     
     <div class="filters-container">
         <div class="filter-group">
@@ -381,7 +427,7 @@ if (isset($_GET['id'])) {
         </thead>
         <tbody>
             <?php foreach ($usuarios as $u): ?>
-                <tr data-permiso="<?= htmlspecialchars($u['permiso']); ?>">
+                <tr data-permiso="<?= htmlspecialchars($u['permiso']); ?>" data-id="<?= htmlspecialchars($u['idUsuarios']); ?>">
                     <td><?= htmlspecialchars($u['idUsuarios']); ?></td>
                     <td><?= htmlspecialchars($u['usuario']); ?></td>
                     <td><?= htmlspecialchars($u['correo']); ?></td>
@@ -409,6 +455,7 @@ if (isset($_GET['id'])) {
             const tablaUsuarios = document.getElementById('tabla-usuarios');
             const noResults = document.getElementById('no-results');
             const filas = tablaUsuarios.querySelectorAll('tbody tr');
+            const loader = document.getElementById('loader');
             
             // Función para filtrar por permiso
             function filtrarTabla() {
@@ -478,14 +525,50 @@ if (isset($_GET['id'])) {
                 alert('Tabla ordenada por ' + tablaUsuarios.querySelectorAll('th')[columna].textContent.trim());
             }
             
+            // Función para borrar usuario con AJAX usando el mismo archivo
+            async function borrarUsuario(userId) {
+                if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+                    try {
+                        loader.style.display = 'block';
+                        
+                        // Crear FormData para enviar datos
+                        const formData = new FormData();
+                        formData.append('action', 'borrarUsuario');
+                        formData.append('id', userId);
+                        
+                        // Realizar petición AJAX al mismo archivo
+                        const response = await fetch(window.location.href, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            alert('Usuario eliminado correctamente');
+                            // Eliminar la fila de la tabla
+                            const filaEliminar = document.querySelector(`tr[data-id="${userId}"]`);
+                            if (filaEliminar) {
+                                filaEliminar.remove();
+                            }
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert('Error al procesar la solicitud. Consulta la consola para más detalles.');
+                    } finally {
+                        loader.style.display = 'none';
+                    }
+                }
+            }
+            
             // Manejar botones de borrar
             document.querySelectorAll('.btn-borrar').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     const userId = this.getAttribute('data-id');
-                    if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-                        alert('Funcionalidad de borrado no implementada. ID: ' + userId);
-                    }
+                    borrarUsuario(userId);
                 });
             });
             
