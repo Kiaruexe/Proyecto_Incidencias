@@ -21,50 +21,93 @@ if (isset($_POST['registrar'])) {
     $localidad2        = limpiarCampo($_POST['localidad2'] ?? '');
     $direccion2        = limpiarCampo($_POST['direccion2'] ?? '');
 
-    $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
-
     try {
-        $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62');
+    
+    $bd = new PDO(
+        'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa', 'Mapapli', '9R%d5cf62',
+        [ PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION ]
+    );
 
-        $sql = "INSERT INTO Usuarios (
-            usuario, correo, contrasena, permiso,
-            cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
-            cp1, provincia1, localidad1, direccion1,
-            cp2, provincia2, localidad2, direccion2
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $bd->prepare($sql);
-        $stmt->execute([
-            $usuario,
-            $correo,
-            $contrasenaHash,
-            $permiso,
-            $cpFiscal,
-            $provinciaFiscal,
-            $localidadFiscal,
-            $direccionFiscal,
-            $cp1,
-            $provincia1,
-            $localidad1,
-            $direccion1,
-            $cp2,
-            $provincia2,
-            $localidad2,
-            $direccion2
-        ]);
+    $sql = "SELECT COUNT(*) FROM Usuarios WHERE usuario = ? OR correo = ?";
+    $stmt = $bd->prepare($sql);
+    $stmt->execute([$usuario, $correo]);
 
-        // Mostrar mensaje de éxito en un alert y redirigir
+    if ($stmt->fetchColumn() > 0) {
         echo "<script>
-                alert('✅ Usuario registrado con éxito.');
-                window.location.href = '../home.php'; // Redirigir al home
+                alert('⚠️ Ya existe un usuario con ese nombre o correo electrónico. Por favor, utilice otros datos.');
+                history.back();
               </script>";
-        exit; // Detener la ejecución del script
+        exit;
+    
+        } else {
+            // Proceder con el registro ya que no hay duplicados
+            $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
+            
+            // Iniciar transacción para asegurar la atomicidad de la operación
+            $bd->beginTransaction();
+            
+            $sql = "INSERT INTO Usuarios (
+                usuario, correo, contrasena, permiso,
+                cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
+                cp1, provincia1, localidad1, direccion1,
+                cp2, provincia2, localidad2, direccion2
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $bd->prepare($sql);
+            $resultado = $stmt->execute([
+                $usuario,
+                $correo,
+                $contrasenaHash,
+                $permiso,
+                $cpFiscal,
+                $provinciaFiscal,
+                $localidadFiscal,
+                $direccionFiscal,
+                $cp1,
+                $provincia1,
+                $localidad1,
+                $direccion1,
+                $cp2,
+                $provincia2,
+                $localidad2,
+                $direccion2
+            ]);
+            
+            if ($resultado) {
+                // Confirmar la transacción
+                $bd->commit();
+                
+                // Mostrar mensaje de éxito en un alert y redirigir
+                echo "<script>
+                        alert('✅ Usuario registrado con éxito.');
+                        window.location.href = '../home.php'; // Redirigir al home
+                      </script>";
+                exit; // Detener la ejecución del script
+            } else {
+                // Si hay algún problema, revertir la transacción
+                $bd->rollBack();
+                throw new Exception("Error al insertar el usuario");
+            }
+        }
     } catch (PDOException $e) {
+        // Asegurarse de que cualquier transacción abierta se revierta
+        if (isset($bd) && $bd->inTransaction()) {
+            $bd->rollBack();
+        }
+        
         // Mostrar mensaje de error en un alert
         echo "<script>
                 alert('⚠️ Error al registrar el usuario: " . $e->getMessage() . "');
               </script>";
-        exit; // Detener la ejecución del script
+    } catch (Exception $e) {
+        // Asegurarse de que cualquier transacción abierta se revierta
+        if (isset($bd) && $bd->inTransaction()) {
+            $bd->rollBack();
+        }
+        
+        echo "<script>
+                alert('⚠️ " . $e->getMessage() . "');
+              </script>";
     }
 }
 ?>
@@ -98,15 +141,29 @@ if (isset($_POST['registrar'])) {
         }
       }
 
+      // Prevenir envíos duplicados del formulario
+      function prevenirEnvioDuplicado() {
+        const form = document.getElementById('registro-form');
+        const submitBtn = document.querySelector('input[type="submit"]');
+        
+        form.addEventListener('submit', function() {
+          // Deshabilitar el botón después del primer clic
+          submitBtn.disabled = true;
+          submitBtn.value = 'Procesando...';
+          return true;
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         toggleCampos(); 
         document.getElementById('permiso').addEventListener('change', toggleCampos);
+        prevenirEnvioDuplicado();
       });
     </script>
 </head>
 <body>
 <h1>Registrar nuevo usuario</h1>
-<form method="post">
+<form method="post" id="registro-form">
 
     <label>Nombre de usuario:</label><br>
     <input type="text" name="usuario" required><br><br>

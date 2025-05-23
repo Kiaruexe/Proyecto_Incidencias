@@ -748,6 +748,11 @@ if (isset($_POST['modificar'])) {
                 isValid = false;
             }
             
+            // Añadir validación de garantía
+            if (!validarGarantia()) {
+                isValid = false;
+            }
+            
             // Validar CP
             const cp = document.getElementById('cp');
             if (!validarCP(cp)) {
@@ -784,24 +789,24 @@ if (isset($_POST['modificar'])) {
                 const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
                 
                 if (tiposEquipo[selectedEquipo] && tiposEquipo[selectedEquipo].campos) {
-                const camposRequeridos = tiposEquipo[selectedEquipo].camposRequeridos || [];
-                
-                // Validar campos requeridos específicos por tipo
-                camposRequeridos.forEach(function(campo) {
-                    const input = document.getElementsByName(campo)[0];
-                    if (input && !validarCampoRequerido(input, campo)) {
-                    isValid = false;
+                    const camposRequeridos = tiposEquipo[selectedEquipo].camposRequeridos || [];
+                    
+                    // Validar campos requeridos específicos por tipo
+                    camposRequeridos.forEach(function(campo) {
+                        const input = document.getElementsByName(campo)[0];
+                        if (input && !validarCampoRequerido(input, campo)) {
+                            isValid = false;
+                        }
+                    });
+                    
+                    // Validar costo si está visible
+                    const costoDiv = document.getElementById('grupo-costo');
+                    if (costoDiv && costoDiv.style.display !== 'none') {
+                        const costo = document.getElementsByName('costo')[0];
+                        if (costo && !validarCosto(costo)) {
+                            isValid = false;
+                        }
                     }
-                });
-                
-                // Validar costo si está visible
-                const costoDiv = document.getElementById('grupo-costo');
-                if (costoDiv && costoDiv.style.display !== 'none') {
-                    const costo = document.getElementsByName('costo')[0];
-                    if (costo && !validarCosto(costo)) {
-                    isValid = false;
-                    }
-                }
                 }
             }
             
@@ -824,6 +829,76 @@ if (isset($_POST['modificar'])) {
                 return false;
             }
             input.classList.remove('error-input');
+            return true;
+        }
+
+
+         // Función para validar garantía
+        function validarGarantia() {
+            const tipoMantenimiento = document.getElementsByName('tipoMantenimiento')[0];
+            const fechaCompra = document.getElementById('fechaCompra');
+            const opcionGarantia = tipoMantenimiento.querySelector('option[value="mantenimientoGarantia"]');
+            
+            // Si no hay fecha de compra, no permitimos garantía
+            if (!fechaCompra.value) {
+                opcionGarantia.disabled = true;
+                if (tipoMantenimiento.value === 'mantenimientoGarantia') {
+                    tipoMantenimiento.value = '';
+                    alert("Debe ingresar una fecha de compra para seleccionar garantía");
+                }
+                return true;
+            }
+            
+            // Obtener la fecha de compra y convertirla correctamente
+            let fechaCompraStr = fechaCompra.value;
+            let fechaCompraObj;
+            
+            // Detectar si el formato es dd/mm/yyyy y convertirlo
+            if (fechaCompraStr.includes('/')) {
+                const partes = fechaCompraStr.split('/');
+                if (partes.length === 3) {
+                    // Convertir de formato dd/mm/yyyy a yyyy-mm-dd para crear Date
+                    fechaCompraObj = new Date(partes[2], partes[1] - 1, partes[0]);
+                } else {
+                    fechaCompraObj = new Date(fechaCompraStr);
+                }
+            } else {
+                // Si es formato yyyy-mm-dd (HTML5 date input)
+                fechaCompraObj = new Date(fechaCompraStr);
+            }
+            
+            // Verificar si la conversión fue exitosa
+            if (isNaN(fechaCompraObj.getTime())) {
+                opcionGarantia.disabled = true;
+                if (tipoMantenimiento.value === 'mantenimientoGarantia') {
+                    tipoMantenimiento.value = '';
+                }
+                return false;
+            }
+            
+            const hoy = new Date();
+            
+            // Calcular la diferencia en años
+            const diffAnios = hoy.getFullYear() - fechaCompraObj.getFullYear();
+            const mesActual = hoy.getMonth() < fechaCompraObj.getMonth() || 
+                            (hoy.getMonth() === fechaCompraObj.getMonth() && 
+                            hoy.getDate() < fechaCompraObj.getDate());
+            const aniosDiff = mesActual ? diffAnios - 1 : diffAnios;
+            
+            if (aniosDiff >= 3) {
+                // Desactivar la opción de garantía
+                opcionGarantia.disabled = true;
+                
+                // Si ya estaba seleccionada garantía, cambiarla y mostrar mensaje
+                if (tipoMantenimiento.value === 'mantenimientoGarantia') {
+                    tipoMantenimiento.value = '';
+                    alert("La garantía sólo es válida hasta 3 años desde la fecha de compra. Han pasado " + aniosDiff + " años.");
+                }
+            } else {
+                // Activar la opción de garantía si está dentro del plazo
+                opcionGarantia.disabled = false;
+            }
+            
             return true;
         }
 
@@ -910,6 +985,20 @@ if (isset($_POST['modificar'])) {
                     actualizarCampos();
                 });
             }
+
+
+
+            // Añadir validación de garantía en tiempo real
+            const tipoMantenimiento = document.getElementsByName('tipoMantenimiento')[0];
+            // Validar fecha de compra cuando cambie
+            const fechaCompra = document.getElementById('fechaCompra');
+            if (fechaCompra) {
+                fechaCompra.addEventListener('change', function() {
+                    validarGarantia();
+                });
+            }
+
+             validarGarantia();
         });
     </script>
 </head>
