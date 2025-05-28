@@ -1,386 +1,503 @@
-<?php 
+<?php
 session_start();
 
-// Si no hay sesión iniciada, redirigir al login
-if (!isset($_SESSION['idUsuario'])) {
-    header("Location: ../login.php");
-    exit;
+function leerTiposEquipo()
+{
+  $json = __DIR__ . '/../configuracion/tiposEquipo.json';
+  $php = __DIR__ . '/../configuracion/cofTiposEquipo.php';
+  if (file_exists($json)) {
+    $d = json_decode(file_get_contents($json), true);
+    if ($d !== null)
+      return $d;
+  }
+  if (file_exists($php)) {
+    include_once($php);
+    if (isset($tiposEquipo))
+      return $tiposEquipo;
+  }
+  return [
+    'pc' => ['label' => 'PC', 'campos' => []],
+    'portatil' => ['label' => 'Portátil', 'campos' => []],
+    'impresora' => ['label' => 'Impresora', 'campos' => []],
+    'monitor' => ['label' => 'Monitor', 'campos' => []],
+    'otro' => ['label' => 'Otro', 'campos' => []],
+    'teclado' => ['label' => 'Teclado', 'campos' => []],
+    'raton' => ['label' => 'Ratón', 'campos' => []],
+    'router' => ['label' => 'Router', 'campos' => []],
+    'sw' => ['label' => 'Switch', 'campos' => []],
+    'sai' => ['label' => 'SAI', 'campos' => []],
+  ];
 }
 
-// Función para leer tipos de equipo (igual que en crearEquipo.php)
-function leerTiposEquipo() {
-    $archivoJson = '../configuracion/tiposEquipo.json';
-    $archivoPhp = '../configuracion/cofTiposEquipo.php';
-    
-    // Intentar leer desde el archivo JSON (prioridad)
-    if (file_exists($archivoJson)) {
-        $contenido = file_get_contents($archivoJson);
-        $datos = json_decode($contenido, true);
-        if ($datos !== null) {
-            return $datos;
-        }
-    }
-    
-    // Si no existe el JSON o falla la decodificación, intentar el PHP
-    if (file_exists($archivoPhp)) {
-        include_once($archivoPhp);
-        if (isset($tiposEquipo)) {
-            return $tiposEquipo;
-        }
-    }
-    
-    // Si ninguno existe o fallan, devolver los tipos por defecto
-    return [
-        'pc' => ['label' => 'PC', 'prefijo' => 'PC', 'campos' => ['marca','modelo','serie','placa','procesador','memoria','disco','observaciones','costo','sistema','ubicacion']],
-        'portatil' => ['label' => 'Portátil', 'prefijo' => 'port', 'campos' => ['marca','modelo','serie','procesador','memoria','disco','pantalla','observaciones','costo','sistema','ubicacion']],
-        'impresora' => ['label' => 'Impresora', 'prefijo' => 'imp', 'campos' => ['marca','modelo','serie','observaciones','ubicacion','costo']],
-        'monitor' => ['label' => 'Monitor', 'prefijo' => 'mon', 'campos' => ['marca','modelo','serie','observaciones','ubicacion','costo']],
-        'otro' => ['label' => 'Otro', 'prefijo' => 'ot', 'campos' => ['tipo','marca','modelo','serie','observaciones','ubicacion','costo']],
-        'teclado' => ['label' => 'Teclado', 'prefijo' => 'tecl', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
-        'raton' => ['label' => 'Ratón', 'prefijo' => 'rat', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
-        'router' => ['label' => 'Router', 'prefijo' => 'rou', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
-        'sw' => ['label' => 'Switch', 'prefijo' => 'sw', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']],
-        'sai' => ['label' => 'SAI', 'prefijo' => 'sai', 'campos' => ['marca','modelo','serie','observaciones','costo','ubicacion']]
-    ];
+function leerTiposMantenimiento()
+{
+  $json = __DIR__ . '/../configuracion/tiposMantenimiento.json';
+  $php = __DIR__ . '/../configuracion/tiposMantenimiento.php';
+  if (file_exists($json)) {
+    $d = json_decode(file_get_contents($json), true);
+    if ($d !== null)
+      return $d;
+  }
+  if (file_exists($php)) {
+    include_once($php);
+    if (isset($tiposMantenimiento))
+      return $tiposMantenimiento;
+  }
+  return [
+    'mantenimientoCompleto' => ['label' => 'Completo', 'descripcion' => 'Incluye mano de obra y materiales'],
+    'mantenimientoManoObra' => ['label' => 'Mano de Obra', 'descripcion' => 'Solo mano de obra'],
+    'mantenimientoFacturable' => ['label' => 'Facturable', 'descripcion' => 'Facturable a terceros'],
+    'mantenimientoGarantia' => ['label' => 'Garantía', 'descripcion' => 'Cubierto por garantía'],
+  ];
 }
 
-// Función para leer tipos de mantenimiento (igual que en crearEquipo.php)
-function leerTiposMantenimiento() {
-    $archivoJson = '../configuracion/tiposMantenimiento.json';
-    $archivoPhp = '../configuracion/tiposMantenimiento.php';
-    
-    // Intentar leer desde el archivo JSON (prioridad)
-    if (file_exists($archivoJson)) {
-        $contenido = file_get_contents($archivoJson);
-        return json_decode($contenido, true);
-    }
-    
-    // Si no existe el JSON, intentar el PHP
-    if (file_exists($archivoPhp)) {
-        include_once($archivoPhp);
-        if (isset($tiposMantenimiento)) {
-            return $tiposMantenimiento;
-        }
-    }
-    
-    // Si ninguno existe, devolver los tipos por defecto
-    return [
-        'mantenimientoCompleto' => [
-            'label' => 'Completo',
-            'descripcion' => 'Servicio de mantenimiento completo que incluye mano de obra y materiales'
-        ],
-        'mantenimientoManoObra' => [
-            'label' => 'Mano de Obra',
-            'descripcion' => 'Servicio que incluye solo mano de obra, sin materiales'
-        ],
-        'mantenimientoFacturable' => [
-            'label' => 'Facturable',
-            'descripcion' => 'Servicio facturable a terceros'
-        ],
-        'mantenimientoGarantia' => [
-            'label' => 'Garantía',
-            'descripcion' => 'Servicio cubierto por garantía'
-        ]
-    ];
-}
-
-// Cargar los tipos de equipo y mantenimiento
 $tiposEquipo = leerTiposEquipo();
 $tiposMantenimiento = leerTiposMantenimiento();
 
-// Conexión a la base de datos
 try {
-    $bd = new PDO(
-        'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 
-        'Mapapli', 
-        '9R%d5cf62'
-    );
+  $bd = new PDO(
+    'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8',
+    'Mapapli',
+    '9R%d5cf62'
+  );
+  $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Obtener datos del usuario en sesión
-    $query = $bd->prepare("SELECT permiso FROM Usuarios WHERE idUsuarios = ?");
-    $query->execute([$_SESSION['idUsuario']]);
-    $userRow = $query->fetch();
-    $permiso = $userRow['permiso'];
+  $u = $bd->prepare("SELECT permiso, usuario FROM Usuarios WHERE idUsuarios = ?");
+  $u->execute([$_SESSION['idUsuario']]);
+  $user = $u->fetch();
+  $permiso = strtolower($user['permiso']);
+  $nombreUsuario = $user['usuario'];
 
-    // Filtros
-    $filtroTipoEquipo = $_GET['tipoEquipo'] ?? 'todos';
-    $filtroMantenimiento = $_GET['tipoMantenimiento'] ?? '';
-    $filtroCP = $_GET['cp'] ?? '';
-    $filtroProvincia = $_GET['provincia'] ?? '';
-    $filtroLocalidad = $_GET['localidad'] ?? '';
-    $filtroUsuario = $_GET['usuario'] ?? '';
+  $fTipo = $_GET['tipoEquipo'] ?? 'todos';
+  $fMaint = $_GET['tipoMantenimiento'] ?? '';
+  $fCP = $_GET['cp'] ?? '';
+  $fProv = $_GET['provincia'] ?? '';
+  $fLocal = $_GET['localidad'] ?? '';
+  $fUser = $_GET['usuario'] ?? '';
+  $orderBy = $_GET['ordenarPor'] ?? 'numEquipo';
+  $orderDir = (($_GET['orden'] ?? 'ASC') === 'DESC') ? 'DESC' : 'ASC';
+  $validCols = ['numEquipo', 'fechaAlta', 'fechaCompra', 'usuario', 'costo'];
+  if (!in_array($orderBy, $validCols))
+    $orderBy = 'numEquipo';
 
-    // Ordenación
-    $ordenarPor = $_GET['ordenarPor'] ?? 'numEquipo';
-    $orden = ($_GET['orden'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+  $orderBySql = ($orderBy === 'usuario') ? 'u.usuario' : "e.$orderBy";
 
-    // Columnas permitidas para ordenar (para evitar inyección SQL)
-    $columnasOrden = ['numEquipo', 'fechaAlta', 'fechaCompra', 'usuario', 'costo'];
-    if (!in_array($ordenarPor, $columnasOrden)) {
-        $ordenarPor = 'numEquipo';
+  $sql = "SELECT e.*, u.usuario
+          FROM Equipos e
+          LEFT JOIN Usuarios u ON e.idUsuario = u.idUsuarios
+          WHERE 1=1";
+  $params = [];
+
+  if ($permiso === 'cliente') {
+    $sql .= " AND e.idUsuario = ?";
+    $params[] = $_SESSION['idUsuario'];
+  }
+  if ($fTipo !== 'todos') {
+    $sql .= " AND e.tipoEquipo = ?";
+    $params[] = $fTipo;
+  }
+  if ($fMaint !== '') {
+    $sql .= " AND e.tipoMantenimiento = ?";
+    $params[] = $fMaint;
+  }
+
+  foreach (['cp' => $fCP, 'provincia' => $fProv, 'localidad' => $fLocal] as $col => $val) {
+    if ($val !== '') {
+      $sql .= " AND e.$col LIKE ?";
+      $params[] = "%$val%";
     }
+  }
 
-    // Construcción de la consulta con filtros
-    $sql = "SELECT e.*, u.usuario FROM Equipos e 
-            LEFT JOIN Usuarios u ON e.idUsuario = u.idUsuarios WHERE 1=1";
-    $params = [];
+  if ($fUser !== '') {
+    $sql .= " AND u.usuario LIKE ?";
+    $params[] = "%$fUser%";
+  }
 
-    // Permiso de cliente (solo ve sus equipos)
-    if ($permiso === 'cliente') {
-        $sql .= " AND e.idUsuario = ?";
-        $params[] = $_SESSION['idUsuario'];
-    }
+  $sql .= " ORDER BY $orderBySql $orderDir";
 
-    // Aplicar filtros
-    if (!empty($filtroTipoEquipo) && $filtroTipoEquipo !== 'todos') {
-        $sql .= " AND e.tipoEquipo = ?";
-        $params[] = $filtroTipoEquipo;
-    }
-    if (!empty($filtroMantenimiento)) {
-        $sql .= " AND e.tipoMantenimiento LIKE ?";
-        $params[] = "%$filtroMantenimiento%";
-    }
-    if (!empty($filtroCP)) {
-        $sql .= " AND e.cp LIKE ?";
-        $params[] = "%$filtroCP%";
-    }
-    if (!empty($filtroProvincia)) {
-        $sql .= " AND e.provincia LIKE ?";
-        $params[] = "%$filtroProvincia%";
-    }
-    if (!empty($filtroLocalidad)) {
-        $sql .= " AND e.localidad LIKE ?";
-        $params[] = "%$filtroLocalidad%";
-    }
-    if (!empty($filtroUsuario)) {
-        $sql .= " AND u.usuario LIKE ?";
-        $params[] = "%$filtroUsuario%";
-    }
+  $stmt = $bd->prepare($sql);
+  $stmt->execute($params);
+  $resultados = $stmt->fetchAll();
 
-    // Aplicar ordenación
-    $sql .= " ORDER BY $ordenarPor $orden";
-
-    $query = $bd->prepare($sql);
-    $query->execute($params);
-    
-    // Valores por defecto para campos vacíos
-    $valoresPorDefecto = [
-        'tipoEquipo' => 'No especificado',
-        'marca' => 'No especificada',
-        'modelo' => 'No especificado',
-        'procesador' => 'No especificado',
-        'memoria' => 'No especificada',
-        'disco' => 'No especificado',
-        'tipo' => 'No especificado',
-        'placa' => 'No especificada',
-        'serie' => 'No especificado',
-        'ubicacion' => 'No especificada',
-        'costo' => '0',
-        'sistema' => 'No especificado',
-        'pantalla' => 'No especificada',
-        'observaciones' => 'Sin observaciones',
-        'tipoMantenimiento' => 'No especificado',
-        'fechaCompra' => 'No especificada',
-        'cp' => 'No especificado',
-        'provincia' => 'No especificada',
-        'localidad' => 'No especificada',
-        'direccion' => 'No especificada',
-        'idUsuario' => '0',
-        'tipoDireccion' => 'fiscal'
-    ];
-
-} catch (PDOException $e) {
-    echo "Error de conexión: " . $e->getMessage();
-    exit;
+} catch (Exception $e) {
+  exit("Error: " . htmlspecialchars($e->getMessage()));
 }
 
-// Función para formatear el nombre de tipo de mantenimiento
-function formatearTipoMantenimiento($clave) {
-    global $tiposMantenimiento;
-    
-    if (isset($tiposMantenimiento[$clave])) {
-        return $tiposMantenimiento[$clave]['label'];
-    }
-    
-    return $clave; // Devolver la clave como está si no se encuentra
+function fmtMantenimiento($k)
+{
+  global $tiposMantenimiento;
+  return $tiposMantenimiento[$k]['label'] ?? $k;
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Ver Equipos</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border: 1px solid #ccc;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .boton-limpiar {
-            background-color: #f44336;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        .boton-limpiar:hover {
-            background-color: #d32f2f;
-        }
-        .form-container {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        .form-buttons {
-            margin-top: 10px;
-        }
-        .header-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .volver-home {
-            background-color: #4CAF50;
-            color: white;
-            padding: 8px 16px;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        .volver-home:hover {
-            background-color: #388E3C;
-        }
-        .boton-aplicar {
-            background-color: #2196F3;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .boton-aplicar:hover {
-            background-color: #0b7dda;
-        }
-        .campo-vacio {
-            color: #999;
-            font-style: italic;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Ver Equipos</title>
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #f5f7fa;
+    }
+
+    .nav {
+      background: #00225a;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .nav .brand {
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    .container {
+      flex: 1;
+      width: 95%;
+      max-width: 1200px;
+      margin: 20px auto;
+    }
+
+    h1 {
+      color: #00225a;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #2573fa;
+      padding-bottom: 8px;
+    }
+
+    .button-container {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      padding: 10px 15px;
+      background: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background .3s;
+    }
+
+    .button:hover {
+      background: #45a049;
+    }
+
+    .home-button {
+      background: #2196f3;
+    }
+
+    .home-button:hover {
+      background: #0b7dda;
+    }
+
+    .filter-form {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      background: #eaf1ff;
+      padding: 15px;
+      border: 1px solid #2573fa;
+      border-radius: 5px;
+    }
+
+    .filter-form label {
+      color: #00225a;
+      font-weight: 500;
+    }
+
+    .filter-form select,
+    .filter-form input,
+    .filter-form button {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .filter-form button {
+      background: #00225a;
+      color: #fff;
+      cursor: pointer;
+      transition: background .3s;
+    }
+
+    .filter-form button:hover {
+      background: #2573fa;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      background: #fff;
+      border: 1px solid #2573fa;
+      border-radius: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border: 1px solid #c5d5ff;
+      text-align: left;
+    }
+
+    th {
+      background: #2573fa;
+      color: #fff;
+      position: sticky;
+      top: 0;
+    }
+
+    tr:nth-child(even) {
+      background: #f0f5ff;
+    }
+
+    tr:hover {
+      background: #e5eeff;
+    }
+
+    .card-view {
+      display: none;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #c5d5ff;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      background: #eaf1ff;
+      border-bottom: 2px solid #2573fa;
+      padding: 12px 15px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #00225a;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+
+    .card-body {
+      padding: 10px 15px;
+    }
+
+    .card-row {
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .card-label {
+      flex: 0 0 45%;
+      font-weight: bold;
+      color: #2573fa;
+    }
+
+    .card-value {
+      flex: 1;
+      color: #333;
+    }
+
+    @media(max-width:768px) {
+      .filter-form {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .filter-form label,
+      .filter-form select,
+      .filter-form input,
+      .filter-form button {
+        width: 100%;
+      }
+    }
+
+    @media(max-width:576px) {
+      .table-container {
+        display: none;
+      }
+
+      .card-view {
+        display: block;
+      }
+    }
+
+    footer {
+      background: #000;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      margin-top: auto;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="header-container">
-        <h1>Lista de Equipos</h1>
-        <a href="../home.php" class="volver-home">Volver al home</a>
+  <nav class="nav"><span class="brand">Mapache Security</span></nav>
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h1>Lista de Equipos</h1>
+      <a href="../home.php" class="button home-button">Volver al inicio</a>
     </div>
+    <form method="get" class="filter-form">
+      <label>Tipo:</label>
+      <select name="tipoEquipo">
+        <option value="todos" <?= $fTipo === 'todos' ? 'selected' : ''; ?>>Todos</option>
+        <?php foreach ($tiposEquipo as $k => $v): ?>
+          <option value="<?= htmlspecialchars($k) ?>" <?= $fTipo === $k ? 'selected' : ''; ?>>
+            <?= htmlspecialchars($v['label']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
 
-    <div class="form-container">
-        <form method="get" action="">
-            <label for="tipoEquipo">Tipo de Equipo:</label>
-            <select name="tipoEquipo">
-                <option value="todos" <?= $filtroTipoEquipo=='todos' ? 'selected' : ''; ?>>Todos</option>
-                <?php foreach ($tiposEquipo as $val => $info): ?>
-                <option value="<?= htmlspecialchars($val) ?>" <?= $filtroTipoEquipo==$val ? 'selected' : ''; ?>>
-                    <?= htmlspecialchars($info['label']) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
+      <label>Mantenimiento:</label>
+      <select name="tipoMantenimiento">
+        <option value="" <?= $fMaint === '' ? 'selected' : ''; ?>>Todos</option>
+        <?php foreach ($tiposMantenimiento as $k => $info): ?>
+          <option value="<?= htmlspecialchars($k) ?>" <?= $fMaint === $k ? 'selected' : ''; ?>>
+            <?= htmlspecialchars($info['label']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
 
-            <label for="tipoMantenimiento">Tipo de Pago:</label>
-            <select name="tipoMantenimiento">
-                <option value="" <?= $filtroMantenimiento=='' ? 'selected' : ''; ?>>Todos</option>
-                <?php foreach ($tiposMantenimiento as $val => $info): ?>
-                <option value="<?= htmlspecialchars($val) ?>" <?= $filtroMantenimiento==$val ? 'selected' : ''; ?>>
-                    <?= htmlspecialchars($info['label']) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-            
-            <input type="text" name="cp" placeholder="Código Postal" value="<?= htmlspecialchars($filtroCP); ?>">
-            <input type="text" name="provincia" placeholder="Provincia" value="<?= htmlspecialchars($filtroProvincia); ?>">
-            <input type="text" name="localidad" placeholder="Localidad" value="<?= htmlspecialchars($filtroLocalidad); ?>">
-            <input type="text" name="usuario" placeholder="Nombre de cliente" value="<?= htmlspecialchars($filtroUsuario); ?>">
+      <label>CP:</label><input type="text" name="cp" value="<?= htmlspecialchars($fCP) ?>">
+      <label>Provincia:</label><input type="text" name="provincia" value="<?= htmlspecialchars($fProv) ?>">
+      <label>Localidad:</label><input type="text" name="localidad" value="<?= htmlspecialchars($fLocal) ?>">
+      <label>Cliente:</label><input type="text" name="usuario" value="<?= htmlspecialchars($fUser) ?>">
 
-            <label for="ordenarPor">Ordenar por:</label>
-            <select name="ordenarPor">
-                <option value="numEquipo" <?= $ordenarPor=='numEquipo' ? 'selected' : ''; ?>>Número de Equipo</option>
-                <option value="fechaAlta" <?= $ordenarPor=='fechaAlta' ? 'selected' : ''; ?>>Fecha de Alta</option>
-                <option value="fechaCompra" <?= $ordenarPor=='fechaCompra' ? 'selected' : ''; ?>>Fecha de Compra</option>
-                <option value="usuario" <?= $ordenarPor=='usuario' ? 'selected' : ''; ?>>Usuario</option>
-                <option value="costo" <?= $ordenarPor=='costo' ? 'selected' : ''; ?>>Costo</option>
-            </select>
+      <label>Ordenar por:</label>
+      <select name="ordenarPor">
+        <?php foreach (['numEquipo' => 'Equipo', 'fechaAlta' => 'Alta', 'fechaCompra' => 'Compra', 'usuario' => 'Usuario', 'costo' => 'Costo'] as $col => $lbl): ?>
+          <option value="<?= $col ?>" <?= $orderBy === $col ? 'selected' : ''; ?>><?= $lbl ?></option>
+        <?php endforeach; ?>
+      </select>
+      <select name="orden">
+        <option value="ASC" <?= $orderDir === 'ASC' ? 'selected' : ''; ?>>Asc</option>
+        <option value="DESC" <?= $orderDir === 'DESC' ? 'selected' : ''; ?>>Desc</option>
+      </select>
 
-            <label for="orden">Orden:</label>
-            <select name="orden">
-                <option value="ASC" <?= $orden=='ASC' ? 'selected' : ''; ?>>Ascendente</option>
-                <option value="DESC" <?= $orden=='DESC' ? 'selected' : ''; ?>>Descendente</option>
-            </select>
-            
-            <div class="form-buttons">
-                <button type="submit" class="boton-aplicar">Aplicar Filtros</button>
-                <a href="<?= $_SERVER['PHP_SELF']; ?>" class="boton-limpiar">Limpiar Filtros</a>
-            </div>
-        </form>
-    </div>
+      <button type="submit">Filtrar</button>
+      <a href="<?= $_SERVER['PHP_SELF'] ?>" class="button" style="background:#6c757d">Limpiar</a>
+    </form>
 
-    <table>
-        <tr>
-            <th>Número de Equipo</th>
-            <th>Fecha de Alta</th>
-            <th>Fecha de Compra</th>
-            <th>Tipo de Equipo</th>
-            <th>Tipo de Pago</th>
-            <th>Código Postal</th>
-            <th>Provincia</th>
-            <th>Localidad</th>
-            <th>Dirección</th>
-            <th>Cliente</th>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Serie</th>
-            <th>Observaciones</th>
-            <th>Ubicación</th>
-            <th>Costo</th>
-        </tr>
-
-        <?php while ($row = $query->fetch()): ?>
+    <?php if (count($resultados)): ?>
+      <div class="table-container">
+        <table>
+          <thead>
             <tr>
-                <td><?= !empty($row['numEquipo']) ? htmlspecialchars($row['numEquipo']) : '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['fechaAlta']) ? htmlspecialchars($row['fechaAlta']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['fechaCompra']) ? htmlspecialchars($row['fechaCompra']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['tipoEquipo']) && isset($tiposEquipo[$row['tipoEquipo']]) ? 
-                        htmlspecialchars($tiposEquipo[$row['tipoEquipo']]['label']) : 
-                        '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['tipoMantenimiento']) ? 
-                        htmlspecialchars(formatearTipoMantenimiento($row['tipoMantenimiento'])) : 
-                        '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['cp']) ? htmlspecialchars($row['cp']) : '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['provincia']) ? htmlspecialchars($row['provincia']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['localidad']) ? htmlspecialchars($row['localidad']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['direccion']) ? htmlspecialchars($row['direccion']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['usuario']) ? htmlspecialchars($row['usuario']) : '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['marca']) ? htmlspecialchars($row['marca']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['modelo']) ? htmlspecialchars($row['modelo']) : '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['serie']) ? htmlspecialchars($row['serie']) : '<span class="campo-vacio">No especificado</span>'; ?></td>
-                <td><?= !empty($row['observaciones']) ? htmlspecialchars($row['observaciones']) : '<span class="campo-vacio">Sin observaciones</span>'; ?></td>
-                <td><?= !empty($row['ubicacion']) ? htmlspecialchars($row['ubicacion']) : '<span class="campo-vacio">No especificada</span>'; ?></td>
-                <td><?= !empty($row['costo']) ? htmlspecialchars($row['costo']) : '<span class="campo-vacio">0</span>'; ?></td>
+              <th>Equipo</th>
+              <th>Alta</th>
+              <th>Compra</th>
+              <th>Tipo</th>
+              <th>Maint.</th>
+              <th>CP</th>
+              <th>Prov.</th>
+              <th>Loc.</th>
+              <th>Cliente</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>Serie</th>
+              <th>Obs.</th>
+              <th>Costo</th>
             </tr>
-        <?php endwhile; ?>
-    </table>
+          </thead>
+          <tbody>
+            <?php foreach ($resultados as $r): ?>
+              <tr>
+                <td><?= $r['numEquipo'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['fechaAlta'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['fechaCompra'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= htmlspecialchars($tiposEquipo[$r['tipoEquipo']]['label'] ?? '-') ?></td>
+                <td><?= htmlspecialchars(fmtMantenimiento($r['tipoMantenimiento']) ?? '-') ?></td>
+                <td><?= $r['cp'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['provincia'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['localidad'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['usuario'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['marca'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['modelo'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['serie'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= $r['observaciones'] ?: '<span class="empty">Sin obs.</span>' ?></td>
+                <td><?= $r['costo'] ?: '<span class="empty">0</span>' ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-view">
+        <?php foreach ($resultados as $r): ?>
+          <div class="card">
+            <div class="card-header">Equipo <?= htmlspecialchars($r['numEquipo'] ?: '–') ?></div>
+            <div class="card-body">
+              <div class="card-row">
+                <div class="card-label">Alta:</div>
+                <div class="card-value"><?= $r['fechaAlta'] ?: '–' ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Compra:</div>
+                <div class="card-value"><?= $r['fechaCompra'] ?: '–' ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Tipo:</div>
+                <div class="card-value"><?= htmlspecialchars($tiposEquipo[$r['tipoEquipo']]['label'] ?? '-') ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Maint.:</div>
+                <div class="card-value"><?= htmlspecialchars(fmtMantenimiento($r['tipoMantenimiento']) ?? '-') ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Ubicación:</div>
+                <div class="card-value"><?= implode(' / ', array_filter([$r['provincia'], $r['localidad']])) ?: '–' ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Marca/Modelo:</div>
+                <div class="card-value"><?= ($r['marca'] ?: '-') . ' / ' . ($r['modelo'] ?: '-') ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Serie:</div>
+                <div class="card-value"><?= $r['serie'] ?: '-' ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Obs:</div>
+                <div class="card-value"><?= $r['observaciones'] ?: 'Sin obs.' ?></div>
+              </div>
+              <div class="card-row">
+                <div class="card-label">Costo:</div>
+                <div class="card-value">€<?= $r['costo'] ?: '0' ?></div>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <p>No hay equipos para mostrar.</p>
+    <?php endif; ?>
 
+  </div>
+  <footer>&copy; 2025 Mapache Security</footer>
 </body>
+
 </html>
