@@ -976,7 +976,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
   <div class="footer">
-    <p>&copy; 2025 Todos los derechos reservados.</p>
+    <p>&copy;  <?php echo date('Y'); ?> Todos los derechos reservados.</p>
   </div>
 
   <script>

@@ -88,7 +88,6 @@ if (isset($_SESSION['idUsuario'])) {
             margin-top: 15px;
         }
 
-        /* RESPONSIVE para móviles */
         @media (max-width: 480px) {
             .container {
                 width: 90%;
@@ -148,16 +147,24 @@ if (isset($_SESSION['idUsuario'])) {
                 $bd = new PDO(
                     'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8',
                     'Mapapli',
-                    '9R%d5cf62',
+                    '9R%d5cf62'
                 );
 
-                $consulta = $bd->prepare("SELECT idUsuarios, contrasena FROM Usuarios WHERE correo = ?");
+                // AÑADIMOS 'restablecer' A LA CONSULTA
+                $consulta = $bd->prepare("SELECT idUsuarios, contrasena, restablecer FROM Usuarios WHERE correo = ?");
                 $consulta->execute([$correo]);
                 $usuario = $consulta->fetch();
 
                 if ($usuario && password_verify($contrasenaIngresada, $usuario['contrasena'])) {
                     $_SESSION['idUsuario'] = $usuario['idUsuarios'];
-                    header("Location: home.php");
+
+                    // SI TIENE QUE CAMBIAR CONTRASEÑA, REDIRIGE A cambiarPsw.php
+                    if (!empty($usuario['restablecer']) && $usuario['restablecer'] == 1) {
+                        header("Location: cambiarPsw.php");
+                    } else {
+                        header("Location: home.php");
+                    }
+
                     exit();
                 } else {
                     echo "<p class='error'>Usuario o contraseña incorrectos.</p>";

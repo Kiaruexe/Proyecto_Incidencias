@@ -61,20 +61,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
             // Iniciar transacción
             $bd->beginTransaction();
             
+            // MODIFICACIÓN: Agregado el campo 'restablecer' al INSERT
             $sql = "INSERT INTO Usuarios (
-                usuario, correo, contrasena, permiso,
+                usuario, correo, contrasena, permiso, restablecer,
                 cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
                 cp1, provincia1, localidad1, direccion1,
                 cp2, provincia2, localidad2, direccion2
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $bd->prepare($sql);
             
+            // MODIFICACIÓN: Agregado el valor TRUE para 'restablecer' en los parámetros
             $params = [
                 $usuario,
                 $correo,
                 $contrasenaHash,
                 $permiso,
+                1, // restablecer = TRUE (1)
                 $cpFiscal,
                 $provinciaFiscal,
                 $localidadFiscal,
@@ -561,7 +564,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
 
     <!-- Footer -->
     <div class="footer">
-        <p>&copy; 2025 Todos los derechos reservados.</p>
+        <p>&copy;  <?php echo date('Y'); ?> Todos los derechos reservados.</p>
     </div>
 </body>
 </html>
