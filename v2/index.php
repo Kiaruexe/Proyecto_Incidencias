@@ -218,7 +218,6 @@ if (isset($_SESSION['idUsuario'])) {
     <form action="" method="">
       <img src="multimedia/logo-mapache.png" alt="Logo Mapache" class="logo" />
       <a href="login.php" class="login-btn">LOGIN</a>
-      <p>Texto informativo</p>
     </form>
   </main>
 

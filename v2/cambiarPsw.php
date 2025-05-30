@@ -43,6 +43,7 @@ if (isset($_POST['cambiar'])) {
 <head>
     <meta charset="UTF-8">
     <title>Cambiar Contraseña</title>
+     <link rel="icon" href="multimedia/logo-mapache.png" type="image/png">
     <style>
         body {
             font-family: Arial, sans-serif;
