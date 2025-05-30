@@ -21,6 +21,11 @@ $tiposMantenimiento = array (
     'label' => 'Garantía',
     'descripcion' => 'Servicio cubierto por garantía',
   ),
+  'bz' => 
+  array (
+    'label' => 'bizum',
+    'descripcion' => 'Servicio de pago a traves de Bizum',
+  ),
   'trans' => 
   array (
     'label' => 'Transferencia',

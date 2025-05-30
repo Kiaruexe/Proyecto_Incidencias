@@ -1,8 +1,7 @@
 <?php
 session_start();
 
-function registrarLog(PDO $bd, string $accion, string $descripcion, string $usuario): void
-{
+function registrarLog(PDO $bd, string $accion, string $descripcion, string $usuario): void {
   try {
     $stmt = $bd->prepare("
       INSERT INTO `Log` (`accion`, `descripcion`, `fecha`, `usuario`)
@@ -21,77 +20,43 @@ try {
     '9R%d5cf62'
   );
   $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
+  
   $nombreUsuario = 'anónimo';
   if (isset($_SESSION["idUsuario"])) {
-    $qU = $bd->prepare("SELECT usuario FROM Usuarios WHERE idUsuarios = ?");
-    $qU->execute([$_SESSION['idUsuario']]);
-    $nombreUsuario = $qU->fetchColumn() ?: 'anónimo';
-  }
-
-} catch (PDOException $e) {
-  error_log("Error de conexión BD al iniciar: " . $e->getMessage());
-  $bd = null;
-  $nombreUsuario = 'anónimo';
-}
-
-set_exception_handler(function (Throwable $e) use ($bd, $nombreUsuario) {
-  if (!$bd) {
-    error_log("Excepción sin BD: " . $e->getMessage());
-    http_response_code(500);
-    echo "<h1>Lo sentimos, ha ocurrido un error.</h1>";
-    exit;
-  }
-
-  $usuario = $_SESSION['idUsuario'] ?? $nombreUsuario;
-
-  $detalle = sprintf(
-    "Excepción no capturada en crearIncidencias.php: %s en %s:%d\nStack trace:\n%s",
-    $e->getMessage(),
-    $e->getFile(),
-    $e->getLine(),
-    $e->getTraceAsString()
-  );
-
-  registrarLog($bd, 'error en crear incidencias', $detalle, $usuario);
-
-  http_response_code(500);
-  echo "<h1>Lo sentimos, ha ocurrido un error.</h1>";
-  exit;
-});
-
-if (!isset($_SESSION["idUsuario"])) {
-  header("Location: ../login.php");
-  exit;
-}
-
-if (isset($bd) && $bd) {
-  try {
-    $qU = $bd->prepare("SELECT * FROM Usuarios WHERE idUsuarios = ?");
+    $qU = $bd->prepare("SELECT usuario, permiso, correo FROM Usuarios WHERE idUsuarios = ?");
     $qU->execute([$_SESSION['idUsuario']]);
     $userRow = $qU->fetch();
-
-    if (!$userRow) {
-      throw new Exception("Usuario no encontrado: {$_SESSION['idUsuario']}");
+    if ($userRow) {
+      $nombreUsuario = $userRow['usuario'];
+      $permiso = strtolower($userRow['permiso']);
+      $emailCliente = $userRow['correo'] ?? '';
+    } else {
+      $permiso = '';
+      $emailCliente = '';
     }
-
-    $permiso = strtolower($userRow['permiso']);
-    $nombreUsuario = $userRow['usuario'];
-
-    registrarLog(
-      $bd,
-      'acceso crear incidencias',
-      "El usuario '{$nombreUsuario}' con permiso '{$permiso}' ha accedido a crear incidencias.",
-      $nombreUsuario
-    );
-  } catch (PDOException $e) {
-    error_log("Error al obtener datos de usuario: " . $e->getMessage());
+  } else {
+    header("Location: ../login.php");
+    exit;
   }
+} catch (PDOException $e) {
+  error_log("Error de conexión BD al iniciar: " . $e->getMessage());
+  die("<h1>Error de conexión</h1>");
+}
+
+$tieneEquipos = false;
+if ($permiso === 'cliente') {
+  $qCnt = $bd->prepare("SELECT COUNT(*) FROM Equipos WHERE idUsuario = ?");
+  $qCnt->execute([$_SESSION['idUsuario']]);
+  $tieneEquipos = $qCnt->fetchColumn() > 0;
 }
 
 $incidenciaPrev = $_POST['incidencia'] ?? $_GET['incidenciaPrev'] ?? '';
 $nombrePrev = $_POST['nombre'] ?? $_GET['nombrePrev'] ?? '';
 $numeroPrev = $_POST['numero'] ?? $_GET['numeroPrev'] ?? '';
+
+$alertMsg = '';
+$alertType = '';
+$redirectHome = false;
 
 if (in_array($permiso, ['recepcion', 'admin', 'jefetecnico']) && isset($_POST['elegirCliente'])) {
   $clienteElegido = $_POST['cliente'] ?? '';
@@ -100,14 +65,14 @@ if (in_array($permiso, ['recepcion', 'admin', 'jefetecnico']) && isset($_POST['e
       $qCli = $bd->prepare("SELECT usuario FROM Usuarios WHERE idUsuarios = ?");
       $qCli->execute([$clienteElegido]);
       $nombreCliente = $qCli->fetchColumn() ?: 'desconocido';
-
+      
       registrarLog(
         $bd,
         'selección de cliente',
         "El usuario '{$nombreUsuario}' ha seleccionado al cliente '{$nombreCliente}' (ID: {$clienteElegido}) para crear una incidencia.",
         $nombreUsuario
       );
-
+      
       $qs = http_build_query([
         'clienteElegido' => $clienteElegido,
         'incidenciaPrev' => $incidenciaPrev,
@@ -128,35 +93,8 @@ if (in_array($permiso, ['recepcion', 'admin', 'jefetecnico']) && isset($_POST['e
   }
 }
 
-$tieneEquipos = false;
-if ($permiso === 'cliente') {
-  try {
-    $qCnt = $bd->prepare("SELECT COUNT(*) FROM Equipos WHERE idUsuario = ?");
-    $qCnt->execute([$_SESSION['idUsuario']]);
-    $tieneEquipos = $qCnt->fetchColumn() > 0;
-
-    if (!$tieneEquipos) {
-      registrarLog(
-        $bd,
-        'verificación de equipos',
-        "El cliente '{$nombreUsuario}' intentó crear una incidencia pero no tiene equipos asignados.",
-        $nombreUsuario
-      );
-    }
-  } catch (PDOException $e) {
-    registrarLog(
-      $bd,
-      'error verificando equipos',
-      "Error al verificar equipos del usuario {$nombreUsuario}: " . $e->getMessage(),
-      $nombreUsuario
-    );
-    echo "<p style='color:red;'>Error verificando equipos.</p>";
-  }
-}
-
 if (isset($_POST['crear']) && ($permiso !== 'cliente' || $tieneEquipos)) {
-  function limpiar($v)
-  {
+  function limpiar($v) {
     return !empty($v) ? $v : null;
   }
 
@@ -216,408 +154,359 @@ if (isset($_POST['crear']) && ($permiso !== 'cliente' || $tieneEquipos)) {
     }
   }
 
-  try {
-    $querySerie = $bd->prepare("SELECT valor FROM Contadores WHERE nombre = 'serie'");
-    $querySerie->execute();
-    $anio = $querySerie->fetchColumn();
+  if (!preg_match('/^\d{9}$/', $numero)) {
+    $alertMsg = "El número debe contener exactamente 9 dígitos.";
+    $alertType = "error";
+  } else {
+    try {
+      $querySerie = $bd->prepare("SELECT valor FROM Contadores WHERE nombre = 'serie'");
+      $querySerie->execute();
+      $anio = $querySerie->fetchColumn();
 
-    if (!$anio) {
-      $anio = date('Y');
+      if (!$anio) {
+        $anio = date('Y');
+      }
+
+      $queryCount = $bd->prepare("SELECT COUNT(*) FROM Incidencias WHERE numIncidencia LIKE ?");
+      $queryCount->execute([$anio . '%']);
+      $count = $queryCount->fetchColumn();
+
+      $numIncidencia = $anio . str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+
+      registrarLog(
+        $bd,
+        'generación número incidencia',
+        "Generado número de incidencia {$numIncidencia} para el usuario '{$nombreUsuario}'.",
+        $nombreUsuario
+      );
+    } catch (PDOException $e) {
+      $alertMsg = "Error al generar número de incidencia: " . $e->getMessage();
+      $alertType = "error";
     }
 
-    $queryCount = $bd->prepare("SELECT COUNT(*) FROM Incidencias WHERE numIncidencia LIKE ?");
-    $queryCount->execute([$anio . '%']);
-    $count = $queryCount->fetchColumn();
+    if ($alertType !== "error") {
+      try {
+        $sql = "INSERT INTO Incidencias (
+                  fecha, estado, tecnicoAsignado, observaciones,
+                  TDesplazamiento, TIntervencion, tipoFinanciacion,
+                  idUsuario, numEquipo, incidencia,
+                  cp, localidad, provincia, direccion, correo,
+                  nombre, numero, numIncidencia
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        $st = $bd->prepare($sql);
+        $st->execute([
+          $fecha,
+          $estado,
+          $tech,
+          $obs,
+          $td,
+          $ti,
+          $tipoFin,
+          $idU,
+          $numEq,
+          $incidencia,
+          $cp,
+          $loc,
+          $prov,
+          $dirDet,
+          $correo,
+          $nombre,
+          $numero,
+          $numIncidencia
+        ]);
 
-    $numIncidencia = $anio . str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+        $clienteInfo = "";
+        if ($permiso !== 'cliente') {
+          $qClienteInfo = $bd->prepare("SELECT usuario FROM Usuarios WHERE idUsuarios = ?");
+          $qClienteInfo->execute([$idU]);
+          $clienteNombre = $qClienteInfo->fetchColumn() ?: 'desconocido';
+          $clienteInfo = " para el cliente '{$clienteNombre}' (ID: {$idU})";
+        }
 
-    registrarLog(
-      $bd,
-      'generación número incidencia',
-      "Generado número de incidencia {$numIncidencia} para el usuario '{$nombreUsuario}'.",
-      $nombreUsuario
-    );
-  } catch (PDOException $e) {
-    registrarLog(
-      $bd,
-      'error al generar número incidencia',
-      "Error al generar número de incidencia: " . $e->getMessage(),
-      $nombreUsuario
-    );
-    die("<p style='color:red;'>Error al generar número de incidencia: " . $e->getMessage() . "</p>");
-  }
+        $descripcionIncidencia = "El usuario '{$nombreUsuario}' ha creado la incidencia #{$numIncidencia}{$clienteInfo}. " .
+                                "Equipo: {$numEq}, Tipo: '{$incidencia}', Técnico asignado: '{$tech}'.";
 
-  try {
-    $sql = "INSERT INTO Incidencias (
-              fecha, estado, tecnicoAsignado, observaciones,
-              TDesplazamiento, TIntervencion, tipoFinanciacion,
-              idUsuario, numEquipo, incidencia,
-              cp, localidad, provincia, direccion, correo,
-              nombre, numero, numIncidencia
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    $st = $bd->prepare($sql);
-    $st->execute([
-      $fecha,
-      $estado,
-      $tech,
-      $obs,
-      $td,
-      $ti,
-      $tipoFin,
-      $idU,
-      $numEq,
-      $incidencia,
-      $cp,
-      $loc,
-      $prov,
-      $dirDet,
-      $correo,
-      $nombre,
-      $numero,
-      $numIncidencia
-    ]);
+        registrarLog(
+          $bd,
+          'creación de incidencia',
+          $descripcionIncidencia,
+          $nombreUsuario
+        );
 
-    $clienteInfo = "";
-    if ($permiso !== 'cliente') {
-      $qClienteInfo = $bd->prepare("SELECT usuario FROM Usuarios WHERE idUsuarios = ?");
-      $qClienteInfo->execute([$idU]);
-      $clienteNombre = $qClienteInfo->fetchColumn() ?: 'desconocido';
-      $clienteInfo = " para el cliente '{$clienteNombre}' (ID: {$idU})";
+        $alertMsg = "Incidencia creada con éxito.";
+        $alertType = "success";
+        $redirectHome = true;
+
+      } catch (PDOException $e) {
+        $alertMsg = "Error al registrar incidencia: " . $e->getMessage();
+        $alertType = "error";
+      }
     }
-
-    $descripcionIncidencia = "El usuario '{$nombreUsuario}' ha creado la incidencia #{$numIncidencia}{$clienteInfo}. " .
-      "Equipo: {$numEq}, Tipo: '{$incidencia}', Técnico asignado: '{$tech}'.";
-
-    registrarLog(
-      $bd,
-      'creación de incidencia',
-      $descripcionIncidencia,
-      $nombreUsuario
-    );
-
-    header("Location: ../home.php");
-    exit;
-  } catch (PDOException $e) {
-    registrarLog(
-      $bd,
-      'error al crear incidencia',
-      "Error al registrar incidencia: " . $e->getMessage() . "\nDatos: " . json_encode([
-        'fecha' => $fecha,
-        'estado' => $estado,
-        'tecnico' => $tech,
-        'idUsuario' => $idU,
-        'numEquipo' => $numEq,
-        'incidencia' => $incidencia,
-        'numIncidencia' => $numIncidencia
-      ]),
-      $nombreUsuario
-    );
-    die("<p style='color:red;'>Error al registrar incidencia: "
-      . $e->getMessage() . "</p>");
-  }
-}
-
-$emailCliente = '';
-if ($permiso === 'cliente') {
-  $emailCliente = $userRow['correo'] ?? '';
-} elseif (isset($_GET['clienteElegido'])) {
-  try {
-    $qC = $bd->prepare("SELECT correo FROM Usuarios WHERE idUsuarios = ?");
-    $qC->execute([$_GET['clienteElegido']]);
-    $emailCliente = $qC->fetchColumn() ?: '';
-  } catch (PDOException $e) {
-    registrarLog(
-      $bd,
-      'error al obtener correo de cliente',
-      "Error al obtener correo del cliente ID {$_GET['clienteElegido']}: " . $e->getMessage(),
-      $nombreUsuario
-    );
   }
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Crear Incidencias</title>
-  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
-      padding: 20px;
-      text-align: center;
+    *, *::before, *::after {
+      box-sizing: border-box;
     }
 
-    form {
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #333;
+    }
+
+    header {
+      background-color: #00225a;
+      color: white;
+      padding: 20px 30px;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      user-select: none;
+    }
+
+    main {
+      flex: 1 0 auto;
+      max-width: 900px;
+      margin: 100px auto 80px;
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 600px;
-      margin: 0 auto;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      text-align: left;
+      border-radius: 12px;
+      padding: 30px 40px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      align-items: flex-start;
+      justify-content: space-between;
     }
 
     h1 {
-      color: #2c3e50;
+      width: 100%;
       text-align: center;
-      margin-bottom: 20px;
+      font-size: 2.4rem;
+      margin-bottom: 30px;
+      color: #00225a;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      user-select: none;
     }
 
-    p {
-      margin-bottom: 15px;
+    form {
+      display: contents;
+      width: 100%;
+    }
+
+    .form-group {
+      flex: 1 1 45%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.textarea-group {
+      flex: 1 1 100%;
     }
 
     label {
-      font-weight: bold;
+      font-weight: 700;
+      color: #00225a;
+      margin-bottom: 8px;
+      user-select: none;
+      font-size: 1.1rem;
     }
 
-    select,
-    textarea,
     input[type="text"],
     input[type="email"],
-    input[type="number"] {
+    input[type="number"],
+    select,
+    textarea {
+      font-size: 1rem;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 2px solid #2573fa;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      resize: vertical;
+      color: #333;
+      background-color: #f9fbff;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
+      min-height: 45px;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #f9ab25;
+      box-shadow: 0 0 6px #f9ab25;
+      background-color: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      max-height: 180px;
+      padding-top: 14px;
+    }
+
+    #direccionEquipo {
+      background-color: #e1e9ff;
+      cursor: not-allowed;
+      color: #555;
+    }
+
+    .btn-group {
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      margin-bottom: 10px;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 15px;
     }
 
-    input[type="submit"] {/* Logo Mapache Security centrado */
-.logo-mapache {
-  text-align: center;
-  margin: 20px 0;
-  font-size: 24px;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.logo-mapache .casa-icon {
-  color: white;
-  background: #2c3e50;
-  padding: 5px 8px;
-  border-radius: 4px;
-  margin: 0 5px;
-  display: inline-block;
-}
-
-/* Botones verdes específicos */
-.btn-registrar-equipo,
-.btn-agregar-pago {
-  background: #27ae60 !important;
-  color: #fff !important;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px;
-  transition: background-color 0.3s ease;
-}
-
-.btn-registrar-equipo:hover,
-.btn-agregar-pago:hover {
-  background: #219150 !important;
-}
-
-/* Si los botones están dentro de enlaces */
-a.btn-registrar-equipo,
-a.btn-agregar-pago {
-  background: #27ae60;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 14px;
-  transition: background-color 0.3s ease;
-}
-
-a.btn-registrar-equipo:hover,
-a.btn-agregar-pago:hover {
-  background: #219150;
-}
-      background: #3498db;
-      color: #fff;
-      padding: 10px 20px;
+    .btn-group input[type="submit"],
+    .btn-group input[name="elegirCliente"] {
+      flex: 1 1 160px;
+      max-width: 160px;
+      padding: 14px 0;
+      background-color: #f9ab25;
       border: none;
-      border-radius: 6px;
+      border-radius: 30px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: #000;
       cursor: pointer;
+      text-align: center;
+      user-select: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s ease;
+      box-shadow: none; /* Quitada la sombra naranja */
     }
 
-    input[type="submit"]:hover {
-      background: #2980b9;
+    .btn-group input[type="submit"]:hover,
+    .btn-group input[name="elegirCliente"]:hover {
+      background-color: #d38e00;
+      color: #000;
+      box-shadow: none; /* Sin sombra en hover también */
     }
 
     .nuevo-cliente,
     .nuevo-equipo {
+      width: 100%;
       text-align: right;
       margin-top: 10px;
     }
 
-    .nuevo-cliente a,
-    .nuevo-equipo a {
-      background: #27ae60;
+    /* Botones "Crear nuevo..." visuales */
+    .nuevo-cliente button,
+    .nuevo-equipo button {
+      background-color: #2573fa;
       color: #fff;
-      padding: 8px 12px;
-      border-radius: 4px;
-      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
       font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
     }
 
-    .nuevo-cliente a:hover,
-    .nuevo-equipo a:hover {
-      background: #219150;
+    .nuevo-cliente button:hover,
+    .nuevo-equipo button:hover {
+      background-color: #1c56d1;
+    }
+
+    /* Estilo cliente seleccionado */
+    #cliente-seleccionado {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #00225a;
+      margin-bottom: 12px;
+      user-select: none;
+      text-align: left;
+      width: 100%;
+    }
+
+    footer {
+      background-color: #000;
+      color: #fff;
+      padding: 16px 10px;
+      font-size: 0.9rem;
+      text-align: center;
+      user-select: none;
+      flex-shrink: 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+      position: relative;
+      z-index: 100;
+    }
+
+    @media (max-width: 768px) {
+      main {
+        margin: 110px 15px 80px;
+        padding: 25px 20px;
+      }
+
+      .form-group {
+        flex: 1 1 100%;
+      }
+
+      .btn-group {
+        justify-content: center;
+      }
+
+      .nuevo-cliente,
+      .nuevo-equipo {
+        text-align: center;
+        margin-top: 15px;
+      }
+
+      .btn-group input[type="submit"],
+      .btn-group input[name="elegirCliente"] {
+        max-width: 100%;
+      }
     }
   </style>
 </head>
-
 <body>
-  <form method="POST">
-    <h1>Crear Incidencias</h1>
+  <header>Mapache Security</header>
+  <main>
+    <form method="POST" autocomplete="off" novalidate>
+      <h1>Crear Incidencias</h1>
 
-    <?php if ($permiso === 'cliente'): ?>
-      <?php if ($tieneEquipos): ?>
-        <p><label>Equipo:</label><br>
-          <select name="equipo" id="equipo" required>
-            <option value="">Seleccione un equipo</option>
-            <?php
-            $qe = $bd->prepare("
-              SELECT numEquipo, cp, provincia, localidad, direccion,
-                     tipoMantenimiento, modelo
-              FROM Equipos WHERE idUsuario = ?
-            ");
-            $qe->execute([$_SESSION['idUsuario']]);
-            while ($eq = $qe->fetch()) {
-              echo '<option value="' . htmlspecialchars($eq['numEquipo']) . '" '
-                . 'data-cp="' . htmlspecialchars($eq['cp']) . '" '
-                . 'data-provincia="' . htmlspecialchars($eq['provincia']) . '" '
-                . 'data-localidad="' . htmlspecialchars($eq['localidad']) . '" '
-                . 'data-direccion="' . htmlspecialchars($eq['direccion']) . '">'
-                . htmlspecialchars($eq['numEquipo']) . ' - '
-                . htmlspecialchars($eq['modelo']) . ' ('
-                . htmlspecialchars($eq['tipoMantenimiento']) . ')</option>';
-            }
-            ?>
-          </select>
-        </p>
-        <p><label>Correo electrónico:</label><br>
-          <input type="email" name="correo" value="<?= htmlspecialchars($emailCliente) ?>" required>
-        </p>
-        <p><label>Nombre:</label><br>
-          <input type="text" name="nombre" required value="<?= htmlspecialchars($nombrePrev) ?>">
-        </p>
-        <p><label>Número (9 dígitos):</label><br>
-          <input type="number" name="numero" required min="100000000" max="999999999" step="1"
-            value="<?= htmlspecialchars($numeroPrev) ?>">
-        </p>
-        <p><label>Incidencia:</label><br>
-          <textarea name="incidencia" required><?= htmlspecialchars($incidenciaPrev) ?></textarea>
-        </p>
-        <p><label>Dirección del Equipo:</label><br>
-          <input type="text" id="direccionEquipo" readonly>
-        </p>
-        <p><input type="submit" name="crear" value="Crear incidencia"></p>
-      <?php else: ?>
-        <p style="color:red;">No tienes equipos asignados.</p>
-      <?php endif; ?>
-
-    <?php else: ?>
-      <?php if (!isset($_GET['clienteElegido'])): ?>
-        <p><label>Cliente:</label><br>
-          <select name="cliente" id="cliente" required>
-            <option value="">Seleccione un cliente</option>
-            <?php
-            try {
-              $qc = $bd->query("
-                SELECT idUsuarios, usuario, correo
-                FROM Usuarios WHERE permiso = 'cliente'
-              ");
-              while ($cli = $qc->fetch()) {
-                echo '<option value="' . htmlspecialchars($cli['idUsuarios']) . '" '
-                  . 'data-correo="' . htmlspecialchars($cli['correo']) . '">'
-                  . htmlspecialchars($cli['idUsuarios']) . ' - '
-                  . htmlspecialchars($cli['usuario']) . '</option>';
-              }
-            } catch (PDOException $e) {
-              registrarLog(
-                $bd,
-                'error al listar clientes',
-                "Error al obtener lista de clientes: " . $e->getMessage(),
-                $nombreUsuario
-              );
-              echo '<option value="">Error al cargar clientes</option>';
-            }
-            ?>
-          </select>
-        </p>
-        <p><label>Correo electrónico:</label><br>
-          <input type="email" name="correo" value="<?= htmlspecialchars($emailCliente) ?>" required>
-        </p>
-        <p><label>Nombre:</label><br>
-          <input type="text" name="nombre" required value="<?= htmlspecialchars($nombrePrev) ?>">
-        </p>
-        <p><label>Número (9 dígitos):</label><br>
-          <input type="number" name="numero" required min="100000000" max="999999999" step="1"
-            value="<?= htmlspecialchars($numeroPrev) ?>">
-        </p>
-        <p><label>Incidencia:</label><br>
-          <textarea name="incidencia" required><?= htmlspecialchars($incidenciaPrev) ?></textarea>
-        </p>
-        <p>
-          <input type="submit" name="elegirCliente" value="Continuar">
-          <span class="nuevo-cliente">
-            <a href="../usuarios/crearUsuarios.php" target="_blank">Crear nuevo cliente</a>
-          </span>
-        </p>
-
-      <?php else:
-        $clienteElegido = $_GET['clienteElegido'];
-        echo '<input type="hidden" name="cliente" value="' . htmlspecialchars($clienteElegido) . '">';
-        try {
-          $qcl = $bd->prepare("SELECT usuario FROM Usuarios WHERE idUsuarios = ?");
-          $qcl->execute([$clienteElegido]);
-          $cliData = $qcl->fetch();
-        } catch (PDOException $e) {
-          registrarLog(
-            $bd,
-            'error al obtener datos de cliente',
-            "Error al obtener datos del cliente ID {$clienteElegido}: " . $e->getMessage(),
-            $nombreUsuario
-          );
-          $cliData = ['usuario' => 'Desconocido'];
-        }
-        ?>
-        <p>Cliente seleccionado: <?= htmlspecialchars($cliData['usuario']) ?></p>
-        <p><label>Correo electrónico:</label><br>
-          <input type="email" name="correo" value="<?= htmlspecialchars($emailCliente) ?>" required>
-        </p>
-        <p><label>Nombre:</label><br>
-          <input type="text" name="nombre" required value="<?= htmlspecialchars($nombrePrev) ?>">
-        </p>
-        <p><label>Número (9 dígitos):</label><br>
-          <input type="number" name="numero" required min="100000000" max="999999999" step="1"
-            value="<?= htmlspecialchars($numeroPrev) ?>">
-        </p>
-        <p><label>Incidencia:</label><br>
-          <textarea name="incidencia" required><?= htmlspecialchars($incidenciaPrev) ?></textarea>
-        </p>
-        <p><label>Equipo:</label><br>
-          <select name="equipo" id="equipo" required>
-            <option value="">Seleccione un equipo</option>
-            <?php
-            try {
-              $qe2 = $bd->prepare("
+      <?php if ($permiso === 'cliente'): ?>
+        <?php if ($tieneEquipos): ?>
+          <div class="form-group">
+            <label for="equipo">Equipo</label>
+            <select name="equipo" id="equipo" required>
+              <option value="">Seleccione un equipo</option>
+              <?php
+              $qe = $bd->prepare("
                 SELECT numEquipo, cp, provincia, localidad, direccion,
                        tipoMantenimiento, modelo
                 FROM Equipos WHERE idUsuario = ?
               ");
-              $qe2->execute([$clienteElegido]);
-              while ($eq = $qe2->fetch()) {
+              $qe->execute([$_SESSION['idUsuario']]);
+              while ($eq = $qe->fetch()) {
                 echo '<option value="' . htmlspecialchars($eq['numEquipo']) . '" '
                   . 'data-cp="' . htmlspecialchars($eq['cp']) . '" '
                   . 'data-provincia="' . htmlspecialchars($eq['provincia']) . '" '
@@ -627,66 +516,250 @@ a.btn-agregar-pago:hover {
                   . htmlspecialchars($eq['modelo']) . ' ('
                   . htmlspecialchars($eq['tipoMantenimiento']) . ')</option>';
               }
-            } catch (PDOException $e) {
-              registrarLog(
-                $bd,
-                'error al listar equipos',
-                "Error al obtener equipos del cliente ID {$clienteElegido}: " . $e->getMessage(),
-                $nombreUsuario
-              );
-              echo '<option value="">Error al cargar equipos</option>';
-            }
-            ?>
-          </select>
-        </p>
-        <?php if (in_array($permiso, ['admin', 'recepcion', 'jefetecnico'])): ?>
-          <div class="nuevo-equipo">
-            <a href="../equipos/crearEquipos.php" target="_blank">Crear nuevo equipo</a>
+              ?>
+            </select>
           </div>
+
+          <div class="form-group">
+            <label for="correo">Correo electrónico</label>
+            <input type="email" name="correo" id="correo" value="<?= htmlspecialchars($emailCliente) ?>" required>
+          </div>
+
+          <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" name="nombre" id="nombre" required value="<?= htmlspecialchars($nombrePrev) ?>">
+          </div>
+
+          <div class="form-group">
+            <label for="numero">Número (9 dígitos)</label>
+            <input type="number" name="numero" id="numero" required min="100000000" max="999999999" step="1" maxlength="9"
+              value="<?= htmlspecialchars($numeroPrev) ?>" pattern="\d{9}" title="Debe contener exactamente 9 dígitos">
+          </div>
+
+          <div class="form-group textarea-group">
+            <label for="incidencia">Incidencia</label>
+            <textarea name="incidencia" id="incidencia" required><?= htmlspecialchars($incidenciaPrev) ?></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="direccionEquipo">Dirección del Equipo</label>
+            <input type="text" id="direccionEquipo" readonly>
+          </div>
+
+          <div class="btn-group">
+            <input type="submit" name="crear" value="Crear incidencia">
+          </div>
+
+          <div class="nuevo-equipo">
+            <button type="button" onclick="window.open('../equipos/crearEquipos.php', '_blank')">Crear nuevo equipo</button>
+          </div>
+
+        <?php else: ?>
+          <p style="color:red;">No tienes equipos asignados.</p>
         <?php endif; ?>
-        <p><label>Dirección del Equipo:</label><br>
-          <input type="text" id="direccionEquipo" readonly>
-        </p>
-        <?php if (in_array($permiso, ['admin', 'jefetecnico'])): ?>
-          <p><label>Técnico asignado:</label><br>
-            <select name="tecnico">
-              <option value="sin asignar">Sin asignar</option>
+
+      <?php else: ?>
+        <?php if (!isset($_GET['clienteElegido'])): ?>
+          <div class="form-group">
+            <label for="cliente">Cliente</label>
+            <select name="cliente" id="cliente" required>
+              <option value="">Seleccione un cliente</option>
               <?php
               try {
-                $qTech = $bd->query("
-                  SELECT idUsuarios, usuario 
-                  FROM Usuarios 
-                  WHERE permiso = 'tecnico'
-                  ORDER BY usuario
+                $qc = $bd->query("
+                  SELECT idUsuarios, usuario, correo
+                  FROM Usuarios WHERE permiso = 'cliente'
                 ");
-                while ($tech = $qTech->fetch()) {
-                  echo '<option value="' . htmlspecialchars($tech['usuario']) . '">'
-                    . htmlspecialchars($tech['usuario']) . '</option>';
+                while ($cli = $qc->fetch()) {
+                  echo '<option value="' . htmlspecialchars($cli['idUsuarios']) . '" '
+                    . 'data-correo="' . htmlspecialchars($cli['correo']) . '">'
+                    . htmlspecialchars($cli['idUsuarios']) . ' - '
+                    . htmlspecialchars($cli['usuario']) . '</option>';
                 }
               } catch (PDOException $e) {
                 registrarLog(
                   $bd,
-                  'error al listar técnicos',
-                  "Error al obtener lista de técnicos: " . $e->getMessage(),
+                  'error al listar clientes',
+                  "Error al obtener lista de clientes: " . $e->getMessage(),
                   $nombreUsuario
                 );
-                echo '<option value="sin asignar">Error al cargar técnicos</option>';
+                echo '<option value="">Error al cargar clientes</option>';
               }
               ?>
             </select>
-          </p>
-        <?php endif; ?>
-        <p><input type="submit" name="crear" value="Crear incidencia"></p>
-      <?php endif; ?>
-    <?php endif; ?>
-  </form>
+          </div>
 
-  <input type="hidden" name="cp" id="cp">
-  <input type="hidden" name="provincia" id="provincia">
-  <input type="hidden" name="localidad" id="localidad">
-  <input type="hidden" name="direccionDetalle" id="direccionDetalle">
+          <div class="form-group">
+            <label for="correo">Correo electrónico</label>
+            <input type="email" name="correo" id="correo" value="<?= htmlspecialchars($emailCliente) ?>" required>
+          </div>
+
+          <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" name="nombre" id="nombre" required value="<?= htmlspecialchars($nombrePrev) ?>">
+          </div>
+
+          <div class="form-group">
+            <label for="numero">Número (9 dígitos)</label>
+            <input type="number" name="numero" id="numero" required min="100000000" max="999999999" step="1" maxlength="9"
+              value="<?= htmlspecialchars($numeroPrev) ?>" pattern="\d{9}" title="Debe contener exactamente 9 dígitos">
+          </div>
+
+          <div class="form-group textarea-group">
+            <label for="incidencia">Incidencia</label>
+            <textarea name="incidencia" id="incidencia" required><?= htmlspecialchars($incidenciaPrev) ?></textarea>
+          </div>
+
+          <div class="btn-group">
+            <input type="submit" name="elegirCliente" value="Continuar">
+          </div>
+
+          <div class="nuevo-cliente">
+            <button type="button" onclick="window.open('../usuarios/crearUsuarios.php', '_blank')">Crear nuevo cliente</button>
+          </div>
+
+        <?php else:
+          $clienteElegido = $_GET['clienteElegido'];
+          echo '<input type="hidden" name="cliente" value="' . htmlspecialchars($clienteElegido) . '">';
+          try {
+            $qcl = $bd->prepare("SELECT usuario FROM Usuarios WHERE idUsuarios = ?");
+            $qcl->execute([$clienteElegido]);
+            $cliData = $qcl->fetch();
+          } catch (PDOException $e) {
+            registrarLog(
+              $bd,
+              'error al obtener datos de cliente',
+              "Error al obtener datos del cliente ID {$clienteElegido}: " . $e->getMessage(),
+              $nombreUsuario
+            );
+            $cliData = ['usuario' => 'Desconocido'];
+          }
+          ?>
+          <p id="cliente-seleccionado">Cliente seleccionado: <?= htmlspecialchars($cliData['usuario']) ?></p>
+
+          <div class="form-group">
+            <label for="correo">Correo electrónico</label>
+            <input type="email" name="correo" id="correo" value="<?= htmlspecialchars($emailCliente) ?>" required>
+          </div>
+
+          <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" name="nombre" id="nombre" required value="<?= htmlspecialchars($nombrePrev) ?>">
+          </div>
+
+          <div class="form-group">
+            <label for="numero">Número (9 dígitos)</label>
+            <input type="number" name="numero" id="numero" required min="100000000" max="999999999" step="1" maxlength="9"
+              value="<?= htmlspecialchars($numeroPrev) ?>" pattern="\d{9}" title="Debe contener exactamente 9 dígitos">
+          </div>
+
+          <div class="form-group textarea-group">
+            <label for="incidencia">Incidencia</label>
+            <textarea name="incidencia" id="incidencia" required><?= htmlspecialchars($incidenciaPrev) ?></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="equipo">Equipo</label>
+            <select name="equipo" id="equipo" required>
+              <option value="">Seleccione un equipo</option>
+              <?php
+              try {
+                $qe2 = $bd->prepare("
+                  SELECT numEquipo, cp, provincia, localidad, direccion,
+                         tipoMantenimiento, modelo
+                  FROM Equipos WHERE idUsuario = ?
+                ");
+                $qe2->execute([$clienteElegido]);
+                while ($eq = $qe2->fetch()) {
+                  echo '<option value="' . htmlspecialchars($eq['numEquipo']) . '" '
+                    . 'data-cp="' . htmlspecialchars($eq['cp']) . '" '
+                    . 'data-provincia="' . htmlspecialchars($eq['provincia']) . '" '
+                    . 'data-localidad="' . htmlspecialchars($eq['localidad']) . '" '
+                    . 'data-direccion="' . htmlspecialchars($eq['direccion']) . '">'
+                    . htmlspecialchars($eq['numEquipo']) . ' - '
+                    . htmlspecialchars($eq['modelo']) . ' ('
+                    . htmlspecialchars($eq['tipoMantenimiento']) . ')</option>';
+                }
+              } catch (PDOException $e) {
+                registrarLog(
+                  $bd,
+                  'error al listar equipos',
+                  "Error al obtener equipos del cliente ID {$clienteElegido}: " . $e->getMessage(),
+                  $nombreUsuario
+                );
+                echo '<option value="">Error al cargar equipos</option>';
+              }
+              ?>
+            </select>
+          </div>
+
+          <?php if (in_array($permiso, ['admin', 'recepcion', 'jefetecnico'])): ?>
+            <div class="nuevo-equipo">
+              <button type="button" onclick="window.open('../equipos/crearEquipos.php', '_blank')">Crear nuevo equipo</button>
+            </div>
+          <?php endif; ?>
+
+          <div class="form-group">
+            <label for="direccionEquipo">Dirección del Equipo</label>
+            <input type="text" id="direccionEquipo" readonly>
+          </div>
+
+          <?php if (in_array($permiso, ['admin', 'jefetecnico'])): ?>
+            <div class="form-group">
+              <label for="tecnico">Técnico asignado</label>
+              <select name="tecnico" id="tecnico">
+                <option value="sin asignar">Sin asignar</option>
+                <?php
+                try {
+                  $qTech = $bd->query("
+                    SELECT idUsuarios, usuario
+                    FROM Usuarios
+                    WHERE permiso = 'tecnico'
+                    ORDER BY usuario
+                  ");
+                  while ($tech = $qTech->fetch()) {
+                    echo '<option value="' . htmlspecialchars($tech['usuario']) . '">'
+                      . htmlspecialchars($tech['usuario']) . '</option>';
+                  }
+                } catch (PDOException $e) {
+                  registrarLog(
+                    $bd,
+                    'error al listar técnicos',
+                    "Error al obtener lista de técnicos: " . $e->getMessage(),
+                    $nombreUsuario
+                  );
+                  echo '<option value="sin asignar">Error al cargar técnicos</option>';
+                }
+                ?>
+              </select>
+            </div>
+          <?php endif; ?>
+
+          <div class="btn-group">
+            <input type="submit" name="crear" value="Crear incidencia">
+          </div>
+        <?php endif; ?>
+      <?php endif; ?>
+    </form>
+  </main>
+
+  <footer>
+    &copy; <?= date('Y') ?> Mapache Security. Todos los derechos reservados.
+  </footer>
+
+  <input type="hidden" name="cp" id="cp" />
+  <input type="hidden" name="provincia" id="provincia" />
+  <input type="hidden" name="localidad" id="localidad" />
+  <input type="hidden" name="direccionDetalle" id="direccionDetalle" />
 
   <script>
+    <?php if ($redirectHome): ?>
+      alert("<?= addslashes($alertMsg) ?>");
+      window.location.href = "../home.php";
+    <?php elseif ($alertType === "error"): ?>
+      alert("<?= addslashes($alertMsg) ?>");
+    <?php endif; ?>
+
     function actualizarDatosEquipo(sel) {
       const o = sel.options[sel.selectedIndex];
       document.getElementById('direccionEquipo').value = o.getAttribute('data-direccion') || '';
@@ -713,5 +786,4 @@ a.btn-agregar-pago:hover {
     <?php endif; ?>
   </script>
 </body>
-
 </html>

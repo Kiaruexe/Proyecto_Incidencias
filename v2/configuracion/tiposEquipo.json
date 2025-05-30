@@ -141,17 +141,17 @@
             "costo"
         ]
     },
-    "disco": {
-        "label": "Disco",
-        "prefijo": "Dis",
+    "mov": {
+        "label": "Movil",
+        "prefijo": "mov",
         "campos": [
             "marca",
             "modelo",
-            "memoria",
+            "serie",
+            "procesador",
             "observaciones",
             "costo",
-            "ubicacion",
-            "tipo"
+            "ubicacion"
         ]
     }
 }

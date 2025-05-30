@@ -52,54 +52,148 @@ if (!isset($_GET['id'])) {
   <html lang="es">
 
   <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Seleccionar Incidencia a Modificar</title>
-    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png" />
     <style>
-      body {
+      /* Reset y base */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body,
+      html {
+        height: 100%;
+        margin: 0;
         font-family: Arial, sans-serif;
         background: #f0f2f5;
         display: flex;
-        justify-content: center;
-        align-items: center;
+        flex-direction: column;
         min-height: 100vh;
-        margin: 0;
       }
 
-      .container {
-        background: #fff;
-        padding: 30px;
-        border-radius: 10px;
-        max-width: 600px;
-        width: 90%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      header {
+        background-color: #00225a;
+        color: white;
+        padding: 20px 30px;
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+        flex-shrink: 0;
+        user-select: none;
+      }
+
+      main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 15px;
+      }
+
+      .title-select {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #00225a;
+        margin-bottom: 10px;
         text-align: center;
       }
 
-      select,
-      input[type="submit"] {
-        width: 100%;
-        padding: 10px;
-        margin-top: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
+      form.select-incidencia {
+        background: white;
+        padding: 25px 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 600px;
+        max-width: 90vw;
+        text-align: center;
       }
 
-      a {
-        display: block;
-        margin-top: 20px;
-        color: #3498db;
+      select {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: #2573fa !important;
+        color: white !important;
+        appearance: none;
+        outline: none;
+        margin-bottom: 20px;
+        cursor: pointer;
+      }
+
+      select option:first-child {
+        background-color: #2573fa;
+        color: white;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 15px;
+      }
+
+      .btn-group>* {
+        flex: 1;
+        padding: 12px 0;
+        font-weight: bold;
+        font-size: 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        color: black;
+        background-color: #f9ab25;
+        transition: background-color 0.3s ease;
         text-decoration: none;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .btn-group>input[type="submit"]:hover {
+        background-color: #d38e00;
+      }
+
+      .btn-home {
+        background-color: #00225a;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .btn-home:hover {
+        background-color: #001a48;
+      }
+
+      footer {
+        background-color: #000;
+        color: white;
+        padding: 12px 0;
+        text-align: center;
+        font-size: 0.9rem;
+        user-select: none;
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 640px) {
+        form.select-incidencia {
+          width: 100%;
+          padding: 20px;
+        }
       }
     </style>
   </head>
 
   <body>
-    <div class="container">
-      <h1>Seleccionar Incidencia a Modificar</h1>
-      <form method="get" action="">
-        <label for="id">Incidencia:</label>
+    <header>Mapache Security</header>
+    <main>
+      <div class="title-select">Seleccionar Incidencia a Modificar</div>
+      <form method="get" action="" class="select-incidencia" autocomplete="off">
         <select name="id" id="id" required>
           <option value="">-- Seleccione una incidencia --</option>
           <?php foreach ($incidencias as $inc): ?>
@@ -108,10 +202,15 @@ if (!isset($_GET['id'])) {
             </option>
           <?php endforeach; ?>
         </select>
-        <input type="submit" value="Modificar Incidencia">
+        <div class="btn-group">
+          <input type="submit" value="Modificar" />
+          <a href="../home.php" class="btn-home">Volver al home</a>
+        </div>
       </form>
-      <a href="../home.php">Volver al home</a>
-    </div>
+    </main>
+    <footer>
+      &copy; <?= date('Y') ?> Mapache Security.
+    </footer>
   </body>
 
   </html>
@@ -175,8 +274,8 @@ if (isset($_POST['modificar'])) {
             numEquipo       = ?,
             correo          = ?,
             firma           = ?,
-            nombre          = ?,  
-            numero          = ?    
+            nombre          = ?,
+            numero          = ?
             WHERE idIncidencias = ?";
     $stmtUpdate = $bd->prepare($sqlUpdate);
     $stmtUpdate->execute([
@@ -209,43 +308,89 @@ if (isset($_POST['modificar'])) {
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Modificar Incidencia</title>
-  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png" />
   <style>
-    body {
+    /* Reset y base */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body,
+    html {
+      height: 100%;
+      margin: 0;
       font-family: Arial, sans-serif;
       background: #f0f2f5;
-      margin: 0;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      flex-direction: column;
       min-height: 100vh;
+      padding-top: 70px;
+      padding-bottom: 70px;
     }
 
-    .container {
-      background: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      max-width: 700px;
-      width: 90%;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
+    header {
+      background-color: #00225a;
+      color: white;
+      padding: 20px 30px;
+      font-size: 32px;
+      font-weight: bold;
       text-align: center;
-      margin-bottom: 20px;
+      user-select: none;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
     }
 
-    form {
-      text-align: left;
+    main.container {
+      flex-grow: 1;
+      background: white;
+      margin: 20px auto;
+      padding: 30px;
+      max-width: 900px;
+      width: 90%;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 300px;
+      min-width: 280px;
+      gap: 6px;
+    }
+
+    .row-horizontal {
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .row-horizontal .form-group {
+      min-width: unset;
+      flex: 0 1 45%;
     }
 
     label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
+      font-weight: 600;
+      color: #00225a;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
     }
 
     input[type="text"],
@@ -253,152 +398,319 @@ if (isset($_POST['modificar'])) {
     input[type="number"],
     select,
     textarea {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    input[type="submit"] {
-      width: 100%;
-      padding: 10px;
-      background: #3498db;
-      color: #fff;
-      border: none;
+      border: 2px solid #2573fa;
       border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #f9ab25;
+      outline: none;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      max-height: 150px;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      margin-top: 10px;
+      justify-content: center;
+    }
+
+    .btn-group>* {
+      flex: 1;
+      padding: 12px 0;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
       cursor: pointer;
-    }
-
-    input[type="submit"]:hover {
-      background: #2980b9;
-    }
-
-    .nuevo-equipo {
-      text-align: right;
-      margin-bottom: 15px;
-    }
-
-    .nuevo-equipo a {
-      background: #27ae60;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 4px;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s ease;
+      user-select: none;
       text-decoration: none;
     }
 
+    input[type="submit"] {
+      background-color: #f9ab25;
+      color: #000;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #d38e00;
+    }
+
+    .btn-home {
+      background-color: #00225a;
+      color: white;
+    }
+
+    .btn-home:hover {
+      background-color: #001a48;
+    }
+
+    .firma-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .firma-group label {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #00225a;
+    }
+
+    #firma-canvas {
+      border: 2px solid #2573fa;
+      border-radius: 6px;
+      max-width: 100%;
+      touch-action: none;
+      background: #fff;
+    }
+
+    #limpiar-firma {
+      background-color: #d73838;
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      padding: 10px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+
+    #limpiar-firma:hover {
+      background-color: #a82c2c;
+    }
+
+    .nuevo-equipo {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .nuevo-equipo a {
+      background: #2573fa;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      display: inline-block;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+
     .nuevo-equipo a:hover {
-      background: #219150;
+      background: #1a56c2;
+    }
+
+    footer {
+      background-color: #000;
+      color: #fff;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 0.9rem;
+      user-select: none;
+      flex-shrink: 0;
+      margin-top: auto;
+    }
+
+    @media (max-width: 700px) {
+      main.container {
+        max-width: 100%;
+        padding: 15px 20px;
+      }
+
+      .row-horizontal .form-group {
+        flex: 1 1 100%;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Modificar Incidencia</h1>
-    <form method="post" id="modificarIncidenciaForm">
-      <label>ID Incidencia:</label>
-      <input type="text" value="<?= htmlspecialchars($incidenciaData['idIncidencias']) ?>" disabled>
-      <label>Fecha:</label>
-      <input type="text" value="<?= htmlspecialchars($incidenciaData['fecha']) ?>" disabled>
+  <header>Mapache Security</header>
+  <main class="container">
+    <form method="post" id="modificarIncidenciaForm" autocomplete="off">
+      <div class="form-group">
+        <label>ID Incidencia:</label>
+        <input type="text" value="<?= htmlspecialchars($incidenciaData['idIncidencias']) ?>" disabled />
+      </div>
 
-      <label>Cliente:</label>
-      <select name="idUsuario">
-        <?php
-        $clientes = $bd->query("SELECT idUsuarios, usuario FROM Usuarios WHERE permiso='cliente'");
-        foreach ($clientes as $cli) {
-          $sel = ($cli['idUsuarios'] == $incidenciaData['idUsuario']) ? 'selected' : '';
-          echo "<option value=\"" . $cli['idUsuarios'] . "\" $sel>" . htmlspecialchars($cli['usuario']) . "</option>";
-        }
-        ?>
-      </select>
+      <div class="form-group">
+        <label>Fecha:</label>
+        <input type="text" value="<?= htmlspecialchars($incidenciaData['fecha']) ?>" disabled />
+      </div>
 
-      <label>Nº Equipo:</label>
-      <select name="numEquipo" id="numEquipo" required>
-        <?php
-        $qe = $bd->prepare("SELECT numEquipo, cp, provincia, localidad, direccion FROM Equipos WHERE idUsuario = ?");
-        $qe->execute([$incidenciaData['idUsuario']]);
-        while ($eq = $qe->fetch()) {
-          $sel = ($eq['numEquipo'] == $incidenciaData['numEquipo']) ? 'selected' : '';
-          echo "<option value=\"" . $eq['numEquipo'] . "\" data-cp=\"" . $eq['cp'] . "\" data-provincia=\"" . $eq['provincia'] .
-            "\" data-localidad=\"" . $eq['localidad'] . "\" data-direccion=\"" . $eq['direccion'] . "\" $sel>"
-            . htmlspecialchars($eq['numEquipo']) . "</option>";
-        }
-        ?>
-      </select>
+      <div class="form-group">
+        <label>Cliente:</label>
+        <select name="idUsuario">
+          <?php
+          $clientes = $bd->query("SELECT idUsuarios, usuario FROM Usuarios WHERE permiso='cliente'");
+          foreach ($clientes as $cli) {
+            $sel = ($cli['idUsuarios'] == $incidenciaData['idUsuario']) ? 'selected' : '';
+            echo "<option value=\"" . $cli['idUsuarios'] . "\" $sel>" . htmlspecialchars($cli['usuario']) . "</option>";
+          }
+          ?>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nº Equipo:</label>
+        <select name="numEquipo" id="numEquipo" required>
+          <?php
+          $qe = $bd->prepare("SELECT numEquipo, cp, provincia, localidad, direccion FROM Equipos WHERE idUsuario = ?");
+          $qe->execute([$incidenciaData['idUsuario']]);
+          while ($eq = $qe->fetch()) {
+            $sel = ($eq['numEquipo'] == $incidenciaData['numEquipo']) ? 'selected' : '';
+            echo "<option value=\"" . $eq['numEquipo'] . "\" data-cp=\"" . $eq['cp'] . "\" data-provincia=\"" . $eq['provincia'] . "\" data-localidad=\"" . $eq['localidad'] . "\" data-direccion=\"" . $eq['direccion'] . "\" $sel>" . htmlspecialchars($eq['numEquipo']) . "</option>";
+          }
+          ?>
+        </select>
+      </div>
+
       <div class="nuevo-equipo">
         <a href="../equipos/crearEquipos.php" target="_blank">Crear nuevo equipo</a>
       </div>
 
-      <label>Código Postal:</label>
-      <input type="text" id="cp" disabled placeholder="<?= htmlspecialchars($incidenciaData['cp']) ?>">
-      <label>Provincia:</label>
-      <input type="text" id="provincia" disabled placeholder="<?= htmlspecialchars($incidenciaData['provincia']) ?>">
-      <label>Localidad:</label>
-      <input type="text" id="localidad" disabled placeholder="<?= htmlspecialchars($incidenciaData['localidad']) ?>">
-      <label>Dirección:</label>
-      <input type="text" id="direccionDetalle" disabled
-        placeholder="<?= htmlspecialchars($incidenciaData['direccion']) ?>">
+      <div class="form-group">
+        <label>Código Postal:</label>
+        <input type="text" id="cp" disabled placeholder="<?= htmlspecialchars($incidenciaData['cp']) ?>" />
+      </div>
 
-      <label>Correo electrónico:</label>
-      <input type="email" name="correo" required value="<?= htmlspecialchars($incidenciaData['correo']) ?>">
-      <label>Nombre:</label>
-      <input type="text" name="nombre" required value="<?= htmlspecialchars($incidenciaData['nombre']) ?>">
-      <label>Número (9 dígitos):</label>
-      <input type="number" name="numero" required min="100000000" max="999999999" step="1"
-        value="<?= htmlspecialchars($incidenciaData['numero']) ?>">
+      <div class="form-group">
+        <label>Provincia:</label>
+        <input type="text" id="provincia" disabled
+          placeholder="<?= htmlspecialchars($incidenciaData['provincia']) ?>" />
+      </div>
 
-      <label>Incidencia:</label>
-      <textarea name="incidencia" required><?= htmlspecialchars($incidenciaData['incidencia']) ?></textarea>
-      <label>Observaciones:</label>
-      <textarea name="observaciones"><?= htmlspecialchars($incidenciaData['observaciones']) ?></textarea>
+      <div class="form-group">
+        <label>Localidad:</label>
+        <input type="text" id="localidad" disabled
+          placeholder="<?= htmlspecialchars($incidenciaData['localidad']) ?>" />
+      </div>
 
-      <label>Técnico Asignado:</label>
-      <select name="tecnico">
-        <option value="">Sin asignar</option>
-        <?php
-        $tecnicos = $bd->query("SELECT usuario FROM Usuarios WHERE permiso='tecnico'");
-        foreach ($tecnicos as $tec) {
-          $sel = ($tec['usuario'] == $incidenciaData['tecnicoAsignado']) ? 'selected' : '';
-          echo "<option value=\"" . htmlspecialchars($tec['usuario']) . "\" $sel>" . htmlspecialchars($tec['usuario']) . "</option>";
-        }
-        ?>
-      </select>
+      <div class="form-group">
+        <label>Dirección:</label>
+        <input type="text" id="direccionDetalle" disabled
+          placeholder="<?= htmlspecialchars($incidenciaData['direccion']) ?>" />
+      </div>
 
-      <label>Estado:</label>
-      <select name="estado">
-        <option value="0" <?= $incidenciaData['estado'] == 0 ? 'selected' : '' ?>>Abierta</option>
-        <option value="1" <?= $incidenciaData['estado'] == 1 ? 'selected' : '' ?>>Cerrada</option>
-      </select>
+      <div class="row-horizontal">
+        <div class="form-group" style="flex: 0 1 45%;">
+          <label>Número (9 dígitos):</label>
+          <input type="number" name="numero" required min="100000000" max="999999999" step="1"
+            value="<?= htmlspecialchars($incidenciaData['numero']) ?>" />
+        </div>
 
-      <label>Tiempo Desplazamiento (min):</label>
-      <select name="TDesplazamiento">
-        <?php for ($m = 0; $m <= 480; $m += 30):
-          $h = floor($m / 60);
-          $min = $m % 60;
-          $label = sprintf("%02d:%02d", $h, $min); ?>
-          <option value="<?= $m ?>" <?= $m == $TDesplazamiento_minutos ? 'selected' : '' ?>><?= $label ?></option>
-        <?php endfor; ?>
-      </select>
-      <label>Tiempo Intervención (min):</label>
-      <select name="TIntervencion">
-        <?php for ($m = 0; $m <= 480; $m += 30):
-          $h = floor($m / 60);
-          $min = $m % 60;
-          $label = sprintf("%02d:%02d", $h, $min); ?>
-          <option value="<?= $m ?>" <?= $m == $TIntervencion_minutos ? 'selected' : '' ?>><?= $label ?></option>
-        <?php endfor; ?>
-      </select>
+        <div class="form-group" style="flex: 0 1 55%;">
+          <label>Incidencia:</label>
+          <textarea name="incidencia" required><?= htmlspecialchars($incidenciaData['incidencia']) ?></textarea>
+        </div>
+      </div>
 
-      <label>Firma:</label>
-      <canvas id="firma-canvas" width="600" height="150" style="border:1px solid #000;"></canvas>
-      <button type="button" id="limpiar-firma" style="margin-bottom:15px;">Limpiar firma</button>
-      <input type="hidden" name="firma" id="firma">
+      <div class="form-group">
+        <label>Correo electrónico:</label>
+        <input type="email" name="correo" required value="<?= htmlspecialchars($incidenciaData['correo']) ?>" />
+      </div>
 
-      <input type="submit" name="modificar" value="Finalizar Incidencia">
+      <div class="form-group">
+        <label>Nombre:</label>
+        <input type="text" name="nombre" required value="<?= htmlspecialchars($incidenciaData['nombre']) ?>" />
+      </div>
+
+      <div class="form-group">
+        <label>Observaciones:</label>
+        <textarea name="observaciones"><?= htmlspecialchars($incidenciaData['observaciones']) ?></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Técnico Asignado:</label>
+        <select name="tecnico">
+          <option value="">Sin asignar</option>
+          <?php
+          $tecnicos = $bd->query("SELECT usuario FROM Usuarios WHERE permiso='tecnico'");
+          foreach ($tecnicos as $tec) {
+            $sel = ($tec['usuario'] == $incidenciaData['tecnicoAsignado']) ? 'selected' : '';
+            echo "<option value=\"" . htmlspecialchars($tec['usuario']) . "\" $sel>" . htmlspecialchars($tec['usuario']) . "</option>";
+          }
+          ?>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Estado:</label>
+        <select name="estado">
+          <option value="0" <?= $incidenciaData['estado'] == 0 ? 'selected' : '' ?>>Abierta</option>
+          <option value="1" <?= $incidenciaData['estado'] == 1 ? 'selected' : '' ?>>Cerrada</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tiempo Desplazamiento (min):</label>
+        <select name="TDesplazamiento">
+          <?php for ($m = 0; $m <= 480; $m += 30):
+            $h = floor($m / 60);
+            $min = $m % 60;
+            $label = sprintf("%02d:%02d", $h, $min); ?>
+            <option value="<?= $m ?>" <?= $m == $TDesplazamiento_minutos ? 'selected' : '' ?>><?= $label ?></option>
+          <?php endfor; ?>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tiempo Intervención (min):</label>
+        <select name="TIntervencion">
+          <?php for ($m = 0; $m <= 480; $m += 30):
+            $h = floor($m / 60);
+            $min = $m % 60;
+            $label = sprintf("%02d:%02d", $h, $min); ?>
+            <option value="<?= $m ?>" <?= $m == $TIntervencion_minutos ? 'selected' : '' ?>><?= $label ?></option>
+          <?php endfor; ?>
+        </select>
+      </div>
+
+      <div class="firma-group">
+        <label>Firma:</label>
+        <canvas id="firma-canvas" width="600" height="150"></canvas>
+        <button type="button" id="limpiar-firma">Limpiar firma</button>
+        <input type="hidden" name="firma" id="firma" />
+      </div>
+
+      <div class="btn-group" style="margin-top: 20px;">
+        <input type="submit" name="modificar" value="Finalizar Incidencia" />
+        <a href="../home.php" class="btn-home">Volver al home</a>
+      </div>
     </form>
-    <a href="../home.php">Volver al home</a>
-  </div>
+  </main>
+
+  <footer>
+    &copy; <?= date('Y') ?> Mapache Security.
+  </footer>
 
   <script>
     function actualizarEquipo(sel) {
@@ -408,7 +720,9 @@ if (isset($_POST['modificar'])) {
       document.getElementById('localidad').value = o.getAttribute('data-localidad') || '';
       document.getElementById('direccionDetalle').value = o.getAttribute('data-direccion') || '';
     }
-    document.getElementById('numEquipo').addEventListener('change', function () { actualizarEquipo(this); });
+    document.getElementById('numEquipo').addEventListener('change', function () {
+      actualizarEquipo(this);
+    });
     window.addEventListener('load', function () {
       actualizarEquipo(document.getElementById('numEquipo'));
       <?php if (!empty($incidenciaData['firma'])): ?>
@@ -420,17 +734,44 @@ if (isset($_POST['modificar'])) {
 
     const canvas = document.getElementById('firma-canvas');
     const ctx = canvas.getContext('2d');
-    let drawing = false, signed = false;
-    function start(ev) { drawing = true; ctx.beginPath(); move(ev); }
-    function move(ev) { if (!drawing) return; const r = canvas.getBoundingClientRect(); const x = (ev.clientX || ev.touches[0].clientX) - r.left; const y = (ev.clientY || ev.touches[0].clientY) - r.top; ctx.lineTo(x, y); ctx.stroke(); signed = true; }
-    function end() { drawing = false; }
+    let drawing = false,
+      signed = false;
+
+    function start(ev) {
+      drawing = true;
+      ctx.beginPath();
+      move(ev);
+    }
+
+    function move(ev) {
+      if (!drawing) return;
+      const r = canvas.getBoundingClientRect();
+      const x = (ev.clientX || ev.touches[0].clientX) - r.left;
+      const y = (ev.clientY || ev.touches[0].clientY) - r.top;
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      signed = true;
+    }
+
+    function end() {
+      drawing = false;
+    }
     canvas.addEventListener('mousedown', start);
     canvas.addEventListener('mousemove', move);
     canvas.addEventListener('mouseup', end);
     canvas.addEventListener('mouseout', end);
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); start(e); });
-    canvas.addEventListener('touchmove', e => { e.preventDefault(); move(e); });
-    canvas.addEventListener('touchend', e => { e.preventDefault(); end(); });
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      start(e);
+    });
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      move(e);
+    });
+    canvas.addEventListener('touchend', e => {
+      e.preventDefault();
+      end();
+    });
 
     document.getElementById('limpiar-firma').addEventListener('click', () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);

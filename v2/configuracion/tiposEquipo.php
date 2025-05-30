@@ -165,19 +165,19 @@ $tiposEquipo = array (
       4 => 'costo',
     ),
   ),
-  'disco' => 
+  'mov' => 
   array (
-    'label' => 'Disco',
-    'prefijo' => 'Dis',
+    'label' => 'Movil',
+    'prefijo' => 'mov',
     'campos' => 
     array (
       0 => 'marca',
       1 => 'modelo',
-      2 => 'memoria',
-      3 => 'observaciones',
-      4 => 'costo',
-      5 => 'ubicacion',
-      6 => 'tipo',
+      2 => 'serie',
+      3 => 'procesador',
+      4 => 'observaciones',
+      5 => 'costo',
+      6 => 'ubicacion',
     ),
   ),
 );
