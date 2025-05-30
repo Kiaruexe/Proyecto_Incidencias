@@ -946,56 +946,7 @@ if (isset($_GET['id'])) {
                         <th>ACCIONES</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Datos de ejemplo - reemplazar con tu código PHP -->
-                    <tr data-permiso="cliente" data-id="2">
-                        <td>2</td>
-                        <td>cliente2</td>
-                        <td>cliente2@email.com</td>
-                        <td>cliente</td>
-                        <td>
-                            <div class="acciones">
-                                <a href="?id=2" class="btn-modificar" onclick="return confirm('¿Deseas modificar este usuario?');">Modificar</a>
-                                <button class="btn-borrar" data-id="2">Borrar</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr data-permiso="tecnico" data-id="3">
-                        <td>3</td>
-                        <td>tecnico1</td>
-                        <td>tecnico1@email.com</td>
-                        <td>tecnico</td>
-                        <td>
-                            <div class="acciones">
-                                <a href="?id=3" class="btn-modificar" onclick="return confirm('¿Deseas modificar este usuario?');">Modificar</a>
-                                <button class="btn-borrar" data-id="3">Borrar</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr data-permiso="recepcion" data-id="4">
-                        <td>4</td>
-                        <td>recepcion1</td>
-                        <td>recepcion@email.com</td>
-                        <td>recepcion</td>
-                        <td>
-                            <div class="acciones">
-                                <a href="?id=4" class="btn-modificar" onclick="return confirm('¿Deseas modificar este usuario?');">Modificar</a>
-                                <button class="btn-borrar" data-id="4">Borrar</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr data-permiso="admin" data-id="5">
-                        <td>5</td>
-                        <td>admin1</td>
-                        <td>admin@email.com</td>
-                        <td>admin</td>
-                        <td>
-                            <div class="acciones">
-                                <a href="?id=5" class="btn-modificar" onclick="return confirm('¿Deseas modificar este usuario?');">Modificar</a>
-                                <button class="btn-borrar" data-id="5">Borrar</button>
-                            </div>
-                        </td>
-                    </tr>
+                <tbody>                    
                     <!-- Aquí irían más filas con tu código PHP -->
                     <?php if(isset($usuarios)): ?>
                         <?php foreach ($usuarios as $u): ?>

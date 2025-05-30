@@ -15,6 +15,10 @@
         "label": "Garantía",
         "descripcion": "Servicio cubierto por garantía"
     },
+    "bz": {
+        "label": "bizum",
+        "descripcion": "Servicio de pago a traves de Bizum"
+    },
     "trans": {
         "label": "Transferencia",
         "descripcion": "Servicio de pago por transferencia bancaria"
