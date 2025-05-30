@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 if (!isset($_SESSION['idUsuario'])) {
@@ -46,7 +47,7 @@ try {
 
 // Obtener todos los usuarios
 try {
-    $sql = "SELECT idUsuarios, usuario, correo, permiso FROM Usuarios";
+    $sql = "SELECT idUsuarios, usuario, correo, permiso, restablecer FROM Usuarios";
     $stmt = $bd->prepare($sql);
     $stmt->execute();
     $usuarios = $stmt->fetchAll();
@@ -62,7 +63,7 @@ if (isset($_GET['id'])) {
         $sql = "SELECT * FROM Usuarios WHERE idUsuarios = ?";
         $stmt = $bd->prepare($sql);
         $stmt->execute([$idUsuarioModificar]);
-        $usuarioData = $stmt->fetch();
+        $usuarioData = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$usuarioData) {
             echo "<p style='color:red;'>Usuario no encontrado.</p>";
             exit;
@@ -72,84 +73,93 @@ if (isset($_GET['id'])) {
         exit;
     }
 
-    function limpiarCampo($valor) {
-        return !empty($valor) ? $valor : null;
-    }
-
-    function obtenerValor($campo, $actual) {
-        return isset($_POST[$campo]) && trim($_POST[$campo]) !== ''
-            ? trim($_POST[$campo])
-            : $actual;
-    }
-
     if (isset($_POST['modificar'])) {
-        $usuario         = obtenerValor('usuario', $usuarioData['usuario']);
-        $correo          = obtenerValor('correo', $usuarioData['correo']);
-        $contrasenaTexto = $_POST['contrasena'] ?? '';
-        $permiso         = obtenerValor('permiso', $usuarioData['permiso']);
+        // Obtener valores del formulario, manteniendo los actuales si están vacíos
+        $usuario = !empty(trim($_POST['usuario'])) ? trim($_POST['usuario']) : $usuarioData['usuario'];
+        $correo = !empty(trim($_POST['correo'])) ? trim($_POST['correo']) : $usuarioData['correo'];
+        $permiso = !empty(trim($_POST['permiso'])) ? trim($_POST['permiso']) : $usuarioData['permiso'];
+        
+        // Manejar direcciones (solo para clientes)
+        $cpFiscal = !empty(trim($_POST['cpFiscal'])) ? trim($_POST['cpFiscal']) : $usuarioData['cpFiscal'];
+        $provinciaFiscal = !empty(trim($_POST['provinciaFiscal'])) ? trim($_POST['provinciaFiscal']) : $usuarioData['provinciaFiscal'];
+        $localidadFiscal = !empty(trim($_POST['localidadFiscal'])) ? trim($_POST['localidadFiscal']) : $usuarioData['localidadFiscal'];
+        $direccionFiscal = !empty(trim($_POST['direccionFiscal'])) ? trim($_POST['direccionFiscal']) : $usuarioData['direccionFiscal'];
 
-        $cpFiscal        = limpiarCampo(obtenerValor('cpFiscal', $usuarioData['cpFiscal']));
-        $provinciaFiscal = limpiarCampo(obtenerValor('provinciaFiscal', $usuarioData['provinciaFiscal']));
-        $localidadFiscal = limpiarCampo(obtenerValor('localidadFiscal', $usuarioData['localidadFiscal']));
-        $direccionFiscal = limpiarCampo(obtenerValor('direccionFiscal', $usuarioData['direccionFiscal']));
+        $cp1 = !empty(trim($_POST['cp1'])) ? trim($_POST['cp1']) : $usuarioData['cp1'];
+        $provincia1 = !empty(trim($_POST['provincia1'])) ? trim($_POST['provincia1']) : $usuarioData['provincia1'];
+        $localidad1 = !empty(trim($_POST['localidad1'])) ? trim($_POST['localidad1']) : $usuarioData['localidad1'];
+        $direccion1 = !empty(trim($_POST['direccion1'])) ? trim($_POST['direccion1']) : $usuarioData['direccion1'];
 
-        $cp1             = limpiarCampo(obtenerValor('cp1', $usuarioData['cp1']));
-        $provincia1      = limpiarCampo(obtenerValor('provincia1', $usuarioData['provincia1']));
-        $localidad1      = limpiarCampo(obtenerValor('localidad1', $usuarioData['localidad1']));
-        $direccion1      = limpiarCampo(obtenerValor('direccion1', $usuarioData['direccion1']));
+        $cp2 = !empty(trim($_POST['cp2'])) ? trim($_POST['cp2']) : $usuarioData['cp2'];
+        $provincia2 = !empty(trim($_POST['provincia2'])) ? trim($_POST['provincia2']) : $usuarioData['provincia2'];
+        $localidad2 = !empty(trim($_POST['localidad2'])) ? trim($_POST['localidad2']) : $usuarioData['localidad2'];
+        $direccion2 = !empty(trim($_POST['direccion2'])) ? trim($_POST['direccion2']) : $usuarioData['direccion2'];
 
-        $cp2             = limpiarCampo(obtenerValor('cp2', $usuarioData['cp2']));
-        $provincia2      = limpiarCampo(obtenerValor('provincia2', $usuarioData['provincia2']));
-        $localidad2      = limpiarCampo(obtenerValor('localidad2', $usuarioData['localidad2']));
-        $direccion2      = limpiarCampo(obtenerValor('direccion2', $usuarioData['direccion2']));
-
-        if (!empty($contrasenaTexto)) {
-            $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
+        // Manejar contraseña y restablecimiento
+        $contrasenaHash = $usuarioData['contrasena']; // Por defecto mantener la actual
+        $restablecer = $usuarioData['restablecer']; // Por defecto mantener el valor actual
+        
+        // Si se marcó restablecer contraseña
+        if (isset($_POST['restablecer'])) {
+            $restablecer = 1;
+            // Si se proporcionó una contraseña provisional
+            if (!empty(trim($_POST['contrasena_provisional']))) {
+                $contrasenaHash = password_hash(trim($_POST['contrasena_provisional']), PASSWORD_DEFAULT);
+            }
         } else {
-            $contrasenaHash = $usuarioData['contrasena'];
+            // Si no se marcó restablecer, pero se proporcionó una nueva contraseña
+            if (!empty(trim($_POST['contrasena']))) {
+                $contrasenaHash = password_hash(trim($_POST['contrasena']), PASSWORD_DEFAULT);
+                $restablecer = 0; // Al cambiar contraseña normalmente, no necesita restablecimiento
+            }
         }
 
         try {
             $sqlUpdate = "UPDATE Usuarios SET
-                usuario = ?, correo = ?, contrasena = ?, permiso = ?,
+                usuario = ?, correo = ?, contrasena = ?, permiso = ?, restablecer = ?,
                 cpFiscal = ?, provinciaFiscal = ?, localidadFiscal = ?, direccionFiscal = ?,
                 cp1 = ?, provincia1 = ?, localidad1 = ?, direccion1 = ?,
                 cp2 = ?, provincia2 = ?, localidad2 = ?, direccion2 = ?
                 WHERE idUsuarios = ?";
             $stmtUpdate = $bd->prepare($sqlUpdate);
-            $stmtUpdate->execute([
-                $usuario, $correo, $contrasenaHash, $permiso,
+            $resultado = $stmtUpdate->execute([
+                $usuario, $correo, $contrasenaHash, $permiso, $restablecer,
                 $cpFiscal, $provinciaFiscal, $localidadFiscal, $direccionFiscal,
                 $cp1, $provincia1, $localidad1, $direccion1,
                 $cp2, $provincia2, $localidad2, $direccion2,
                 $idUsuarioModificar
             ]);
-            echo "<script>alert('Usuario modificado con éxito.');</script>";
-            $usuarioData = array_merge($usuarioData, [
-                'usuario' => $usuario,
-                'correo' => $correo,
-                'permiso' => $permiso,
-                'cpFiscal' => $cpFiscal,
-                'provinciaFiscal' => $provinciaFiscal,
-                'localidadFiscal' => $localidadFiscal,
-                'direccionFiscal' => $direccionFiscal,
-                'cp1' => $cp1,
-                'provincia1' => $provincia1,
-                'localidad1' => $localidad1,
-                'direccion1' => $direccion1,
-                'cp2' => $cp2,
-                'provincia2' => $provincia2,
-                'localidad2' => $localidad2,
-                'direccion2' => $direccion2
-            ]);
+            
+            if ($resultado) {
+                echo "<script>alert('Usuario modificado con éxito.');</script>";
+                // Actualizar los datos para mostrar en el formulario
+                $usuarioData['usuario'] = $usuario;
+                $usuarioData['correo'] = $correo;
+                $usuarioData['permiso'] = $permiso;
+                $usuarioData['restablecer'] = $restablecer;
+                $usuarioData['cpFiscal'] = $cpFiscal;
+                $usuarioData['provinciaFiscal'] = $provinciaFiscal;
+                $usuarioData['localidadFiscal'] = $localidadFiscal;
+                $usuarioData['direccionFiscal'] = $direccionFiscal;
+                $usuarioData['cp1'] = $cp1;
+                $usuarioData['provincia1'] = $provincia1;
+                $usuarioData['localidad1'] = $localidad1;
+                $usuarioData['direccion1'] = $direccion1;
+                $usuarioData['cp2'] = $cp2;
+                $usuarioData['provincia2'] = $provincia2;
+                $usuarioData['localidad2'] = $localidad2;
+                $usuarioData['direccion2'] = $direccion2;
+            } else {
+                echo "<script>alert('Error: No se pudo modificar el usuario.');</script>";
+            }
         } catch (PDOException $e) {
-            echo "<script>alert('Error al modificar usuario: " . $e->getMessage() . "');</script>";
+            echo "<script>alert('Error al modificar usuario: " . addslashes($e->getMessage()) . "');</script>";
         }
     }
     
     // Mostrar el formulario de modificación de usuario
     ?>
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -180,7 +190,7 @@ if (isset($_GET['id'])) {
       padding: 15px 0;
       text-align: center;
       position: relative;
-      flex-shrink: 0; /* Evita que el header se comprima */
+      flex-shrink: 0;
     }
 
     .header-mapache h1 {
@@ -224,7 +234,6 @@ if (isset($_GET['id'])) {
         margin: 30px 0;
         font-weight: 600;
         margin-right: 300px;
-
     }
 
     /* Contenedor principal del formulario */
@@ -244,7 +253,6 @@ if (isset($_GET['id'])) {
         text-align: center;
         margin-top: 10px;
         margin-right: 300px;
-        
     }
 
     .btn-modificar {
@@ -376,8 +384,8 @@ if (isset($_GET['id'])) {
         text-align: center;
         padding: 15px 0;
         font-size: 14px;
-        flex-shrink: 0; /* Evita que el footer se comprima */
-        margin-top: auto; /* Empuja el footer hacia abajo */
+        flex-shrink: 0;
+        margin-top: auto;
     }
 
     /* Responsivo mejorado */
@@ -437,65 +445,80 @@ if (isset($_GET['id'])) {
         <div class="form-container">
             <form method="post">
                 <label>Nombre de usuario:</label>
-                <input type="text" name="usuario" placeholder="Cliente actual">
+                <input type="text" name="usuario" value="<?= htmlspecialchars($usuarioData['usuario'] ?? ''); ?>" placeholder="Nombre de usuario">
 
                 <label>Correo:</label>
-                <input type="email" name="correo" placeholder="correo@ejemplo.com">
+                <input type="email" name="correo" value="<?= htmlspecialchars($usuarioData['correo'] ?? ''); ?>" placeholder="correo@ejemplo.com">
 
                 <label>Contraseña (dejar en blanco para mantener):</label>
                 <input type="password" name="contrasena" placeholder="Nueva contraseña">
 
                 <label>Permiso:</label>
                 <select name="permiso" id="permiso">
-                    <option value="cliente">Cliente</option>
-                    <option value="recepcion">Recepción</option>
-                    <option value="tecnico">Técnico</option>
-                    <option value="admin">Admin</option>
-                    <option value="jefeTecnico">Jefe Técnico</option>
+                    <option value="cliente" <?= ($usuarioData['permiso'] ?? '') === 'cliente' ? 'selected' : ''; ?>>Cliente</option>
+                    <option value="recepcion" <?= ($usuarioData['permiso'] ?? '') === 'recepcion' ? 'selected' : ''; ?>>Recepción</option>
+                    <option value="tecnico" <?= ($usuarioData['permiso'] ?? '') === 'tecnico' ? 'selected' : ''; ?>>Técnico</option>
+                    <option value="admin" <?= ($usuarioData['permiso'] ?? '') === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                    <option value="jefeTecnico" <?= ($usuarioData['permiso'] ?? '') === 'jefeTecnico' ? 'selected' : ''; ?>>Jefe Técnico</option>
                 </select>
-
-                <div id="direcciones-container">
+                
+                <div style="margin: 20px 0; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" name="restablecer" id="restablecer" value="1" <?= ($usuarioData['restablecer'] ?? 0) == 1 ? 'checked' : ''; ?>>
+                        <strong>Restablecer contraseña (el usuario deberá cambiarla en el próximo login)</strong>
+                    </label>
+                    
+                    <div id="contrasena-provisional" style="display: <?= ($usuarioData['restablecer'] ?? 0) == 1 ? 'block' : 'none'; ?>; margin-top: 15px;">
+                        <label>Contraseña provisional:</label>
+                        <input type="password" name="contrasena_provisional" placeholder="Ingresa contraseña provisional">
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Esta será la contraseña temporal que el usuario deberá usar para iniciar sesión
+                        </small>
+                    </div>
+                </div>
+                
+                <div id="direcciones-container" style="display: <?= ($usuarioData['permiso'] ?? '') === 'cliente' ? 'block' : 'none'; ?>;">
                     <h3>Dirección Fiscal</h3>
                     <label>CP Fiscal:</label>
-                    <input type="number" name="cpFiscal" placeholder="12345">
+                    <input type="number" name="cpFiscal" value="<?= htmlspecialchars($usuarioData['cpFiscal'] ?? ''); ?>" placeholder="12345">
 
                     <label>Provincia Fiscal:</label>
-                    <input type="text" name="provinciaFiscal" placeholder="Provincia">
+                    <input type="text" name="provinciaFiscal" value="<?= htmlspecialchars($usuarioData['provinciaFiscal'] ?? ''); ?>" placeholder="Provincia">
 
                     <label>Localidad Fiscal:</label>
-                    <input type="text" name="localidadFiscal" placeholder="Localidad">
+                    <input type="text" name="localidadFiscal" value="<?= htmlspecialchars($usuarioData['localidadFiscal'] ?? ''); ?>" placeholder="Localidad">
 
                     <label>Dirección Fiscal:</label>
-                    <input type="text" name="direccionFiscal" placeholder="Calle 123">
+                    <input type="text" name="direccionFiscal" value="<?= htmlspecialchars($usuarioData['direccionFiscal'] ?? ''); ?>" placeholder="Calle 123">
 
                     <h3>Primera dirección adicional</h3>
                     <label>CP:</label>
-                    <input type="number" name="cp1" placeholder="54321">
+                    <input type="number" name="cp1" value="<?= htmlspecialchars($usuarioData['cp1'] ?? ''); ?>" placeholder="54321">
 
                     <label>Provincia:</label>
-                    <input type="text" name="provincia1" placeholder="Provincia">
+                    <input type="text" name="provincia1" value="<?= htmlspecialchars($usuarioData['provincia1'] ?? ''); ?>" placeholder="Provincia">
 
                     <label>Localidad:</label>
-                    <input type="text" name="localidad1" placeholder="Localidad">
+                    <input type="text" name="localidad1" value="<?= htmlspecialchars($usuarioData['localidad1'] ?? ''); ?>" placeholder="Localidad">
 
                     <label>Dirección:</label>
-                    <input type="text" name="direccion1" placeholder="Calle 456">
+                    <input type="text" name="direccion1" value="<?= htmlspecialchars($usuarioData['direccion1'] ?? ''); ?>" placeholder="Calle 456">
 
                     <h3>Segunda dirección adicional</h3>
                     <label>CP:</label>
-                    <input type="number" name="cp2" placeholder="67890">
+                    <input type="number" name="cp2" value="<?= htmlspecialchars($usuarioData['cp2'] ?? ''); ?>" placeholder="67890">
 
                     <label>Provincia:</label>
-                    <input type="text" name="provincia2" placeholder="Provincia">
+                    <input type="text" name="provincia2" value="<?= htmlspecialchars($usuarioData['provincia2'] ?? ''); ?>" placeholder="Provincia">
 
                     <label>Localidad:</label>
-                    <input type="text" name="localidad2" placeholder="Localidad">
+                    <input type="text" name="localidad2" value="<?= htmlspecialchars($usuarioData['localidad2'] ?? ''); ?>" placeholder="Localidad">
 
                     <label>Dirección:</label>
-                    <input type="text" name="direccion2" placeholder="Calle 789">
+                    <input type="text" name="direccion2" value="<?= htmlspecialchars($usuarioData['direccion2'] ?? ''); ?>" placeholder="Calle 789">
                 </div>
 
-                <input type="submit" name="modificar" value="Modificar Usuario"  class="btn-modificar"
+                <input type="submit" name="modificar" value="Modificar Usuario" class="btn-modificar"
                        onclick="return confirm('¿Estás seguro de modificar este usuario?');">
             </form>
         </div>
@@ -507,21 +530,39 @@ if (isset($_GET['id'])) {
 
     <!-- Footer -->
     <div class="footer">
-        <p>&copy; 2025 Todos los derechos reservados.</p>
+        <p>&copy;  <?php echo date('Y'); ?>Todos los derechos reservados.</p>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const permisoEl = document.getElementById('permiso');
-            const direccionesEl = document.getElementById('direcciones-container');
+    document.addEventListener('DOMContentLoaded', function() {
+        const permisoEl = document.getElementById('permiso');
+        const direccionesEl = document.getElementById('direcciones-container');
+        const restablecerEl = document.getElementById('restablecer');
+        const contrasenaProvisionalEl = document.getElementById('contrasena-provisional');
 
-            function toggleCampos() {
-                direccionesEl.style.display = permisoEl.value === 'cliente' ? 'block' : 'none';
+        function toggleCampos() {
+            direccionesEl.style.display = permisoEl.value === 'cliente' ? 'block' : 'none';
+        }
+
+        function toggleContrasenaProvisional() {
+            contrasenaProvisionalEl.style.display = restablecerEl.checked ? 'block' : 'none';
+            
+            // Si se desmarca, limpiar el campo de contraseña provisional
+            if (!restablecerEl.checked) {
+                const inputProvisional = contrasenaProvisionalEl.querySelector('input[name="contrasena_provisional"]');
+                if (inputProvisional) {
+                    inputProvisional.value = '';
+                }
             }
+        }
 
-            permisoEl.addEventListener('change', toggleCampos);
-            toggleCampos();
-        });
+        permisoEl.addEventListener('change', toggleCampos);
+        restablecerEl.addEventListener('change', toggleContrasenaProvisional);
+        
+        // Ejecutar al cargar para establecer el estado inicial correcto
+        toggleCampos();
+        toggleContrasenaProvisional();
+    });
     </script>
 </body>
 </html>
@@ -1119,7 +1160,7 @@ if (isset($_GET['id'])) {
         });
     </script>
     <footer class="footer">
-            <p>&copy; 2025 Todos los derechos reservados.</p>
+            <p>&copy;  <?php echo date('Y'); ?> Todos los derechos reservados.</p>
 </footer>
 </body>
 

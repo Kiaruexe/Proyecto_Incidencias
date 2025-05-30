@@ -677,7 +677,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- Footer -->
-    <div class="footer">©Copyright 2025</div>
+    <div class="footer"><p>&copy;  <?php echo date('Y'); ?> Todos los derechos reservados.</p></div>
 
     <script>
         // Validación del formulario de agregar

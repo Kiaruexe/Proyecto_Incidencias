@@ -1674,7 +1674,7 @@ if (isset($_POST['modificar'])) {
     </form>
     <br/><br/>
     <div class="footer">
-    <p>&copy; 2025 Todos los derechos reservados.</p>
+    <p>&copy;  <?php echo date('Y'); ?> Todos los derechos reservados.</p>
   </div>
 </body>
 </html>

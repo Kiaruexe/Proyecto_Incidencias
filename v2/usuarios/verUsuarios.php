@@ -400,7 +400,7 @@ $isClienteView = $filtroPermiso === 'cliente';
     <?php endif; ?>
 
   </div>
-  <footer>&copy; 2025 Mapache Security</footer>
+  <footer>&copy;  <?php echo date('Y'); ?> Mapache Security</footer>
 </body>
 
 </html>
