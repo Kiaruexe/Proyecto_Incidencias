@@ -35,7 +35,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración - Mapache Security</title>
-    <link rel="icon" href="/multimedia/logo-mapache.png" type="image/png">
+    <link rel="icon" href="multimedia/logo-mapache.png" type="image/png">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
