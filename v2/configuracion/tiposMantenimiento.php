@@ -21,9 +21,9 @@ $tiposMantenimiento = array (
     'label' => 'Garantía',
     'descripcion' => 'Servicio cubierto por garantía',
   ),
-  'ghy' => 
+  'trans' => 
   array (
     'label' => 'Transferencia',
-    'descripcion' => 'Servicio por Transferencia',
+    'descripcion' => 'Servicio de pago por transferencia bancaria',
   ),
 );

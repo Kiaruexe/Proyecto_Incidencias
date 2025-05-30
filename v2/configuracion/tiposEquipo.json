@@ -130,27 +130,6 @@
             "ubicacion"
         ]
     },
-    "ghy": {
-        "label": "Telefono",
-        "prefijo": "Tel",
-        "campos": [
-            "marca",
-            "modelo",
-            "observaciones",
-            "costo",
-            "ubicacion"
-        ]
-    },
-    "ghyrr": {
-        "label": "Movil",
-        "prefijo": "Mo",
-        "campos": [
-            "marca",
-            "modelo",
-            "observaciones",
-            "costo"
-        ]
-    },
     "tab": {
         "label": "Tablet",
         "prefijo": "Tab",
@@ -160,6 +139,19 @@
             "serie",
             "observaciones",
             "costo"
+        ]
+    },
+    "disco": {
+        "label": "Disco",
+        "prefijo": "Dis",
+        "campos": [
+            "marca",
+            "modelo",
+            "memoria",
+            "observaciones",
+            "costo",
+            "ubicacion",
+            "tipo"
         ]
     }
 }

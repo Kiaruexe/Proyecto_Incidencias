@@ -174,70 +174,372 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestionar Tipos de Pago</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Tipos de Pago - Mapache Security</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
+        /* Reset y configuración general */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
-        table, th, td {
-            border: 1px solid #ddd;
+
+        body {
+          font-family: Arial, sans-serif;
+          background: #f0f2f5;
+          margin: 0;
+          padding: 0;
         }
-        th, td {
-            padding: 10px;
-            text-align: left;
+
+        /* Header azul con Mapache Security centrado */
+        .header-mapache {
+          background: #002255;
+          color: white;
+          padding: 15px 0;
+          text-align: center;
+          position: relative;
         }
-        th {
-            background-color: #f2f2f2;
+
+        .header-mapache h1 {
+          font-size: 32px;
+          font-weight: bold;
+          margin: 0;
         }
-        .mensaje {
-            padding: 10px;
-            margin-bottom: 15px;
+
+        /* Icono de casa en la esquina superior derecha */
+        .home-icon {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+        }
+        .home-icon .fas {
+        color: white;      /* relleno completamente blanco */
+        font-size: 24px;
+        }
+        .home-icon:hover {
+        background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Contenedor principal */
+        .main-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 40px 20px;
+          text-align: center;
+        }
+
+        /* Título de la página */
+        .page-title {
+          font-size: 28px;
+          color: #2c3e50;
+          margin-bottom: 30px;
+          font-weight: bold;
+        }
+
+        /* Contenedor de botones */
+        .button-container {
+          margin-bottom: 40px;
+        }
+
+        /* Botón Volver al Inicio (naranja) */
+        .btn-volver {
+          background: #f39c12;
+          color: white;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 25px;
+          font-size: 14px;
+          font-weight: bold;
+          text-decoration: none;
+          display: inline-block;
+          margin: 0 10px;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+
+        .btn-volver:hover {
+          background: #e67e22;
+        }
+
+        /* Botón Registrar Equipo (verde) */
+        .btn-registrar {
+          background: #27ae60;
+          color: white;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 25px;
+          font-size: 14px;
+          font-weight: bold;
+          text-decoration: none;
+          display: inline-block;
+          margin: 0 10px;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+
+        .btn-registrar:hover {
+          background: #219150;
+        }
+
+        /* Tabla de tipos de pago */
+        .tabla-container {
+          background: white;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          margin-bottom: 40px;
+          border: 1px solid #ddd;
+        }
+
+        .tabla-tipos {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .tabla-tipos thead {
+          background: #4a90e2;
+          color: white;
+        }
+
+        .tabla-tipos th {
+          padding: 15px;
+          text-align: left;
+          font-weight: bold;
+          font-size: 16px;
+        }
+
+        .tabla-tipos td {
+          padding: 15px;
+          border-bottom: 1px solid #e0e0e0;
+          background: white;
+        }
+
+        .tabla-tipos tbody tr:hover {
+          background: #f8f9fa;
+        }
+
+        /* Botones de acción en la tabla */
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
             border-radius: 4px;
-        }
-        .exito {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .accion {
-            margin-right: 5px;
-        }
-        .edit-form {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
-        .edit-form h3 {
-            margin-top: 0;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 8px;
             font-weight: bold;
         }
-        .form-group input[type="text"], 
-        .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+
+        .edit-btn {
+            background-color: #4a90e2;
+            color: white;
         }
-        .form-group textarea {
-            height: 100px;
+
+        .edit-btn:hover {
+            background-color: #357abd;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Sección Agregar Nuevo Tipo de Pago - Estilo similar a la tabla */
+        .agregar-section {
+          background: #f7faff;
+          border-radius: 15px;
+          padding: 30px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          max-width: 800px;
+          margin: 0 auto 30px;
+          border: 1px solid #ddd;
+        }
+
+        .agregar-section h2 {
+          font-size: 24px;
+          color: #2c3e50;
+          margin-bottom: 30px;
+          font-weight: bold;
+        }
+
+        /* Formulario en dos columnas */
+        .form-row {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+          align-items: flex-start;
+        }
+
+        .form-group {
+          flex: 1;
+        }
+
+        .form-group label {
+          display: block;
+          font-weight: bold;
+          color: #2c3e50;
+          margin-bottom: 5px;
+          font-size: 14px;
+        }
+
+        .form-group input[type="text"] {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          transition: border-color 0.3s ease;
+        }
+
+        .form-group input[type="text"]:focus {
+          outline: none;
+          border-color: #4a90e2;
+        }
+
+        .form-group small {
+          display: block;
+          margin-top: 5px;
+          color: #666;
+          font-size: 12px;
+        }
+
+        /* Campo de descripción */
+        .form-group-full {
+          margin-bottom: 20px;
+        }
+
+        .form-group-full label {
+          display: block;
+          font-weight: bold;
+          color: #2c3e50;
+          margin-bottom: 5px;
+          text-align: left;
+        }
+
+        .form-group-full textarea {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          min-height: 80px;
+          resize: vertical;
+          font-family: Arial, sans-serif;
+          transition: border-color 0.3s ease;
+        }
+
+        .form-group-full textarea:focus {
+          outline: none;
+          border-color: #4a90e2;
+        }
+
+        .form-group-full .help-text {
+          font-size: 12px;
+          color: #666;
+          margin-top: 5px;
+        }
+
+        /* Botón Agregar Tipo de Pago */
+        .btn-agregar {
+          background: #27ae60;
+          color: white;
+          padding: 12px 30px;
+          border: none;
+          border-radius: 25px;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+          display: block;
+          margin: 30px auto 0;
+        }
+
+        .btn-agregar:hover {
+          background: #219150;
+        }
+
+        /* Formulario de edición */
+        .edit-form {
+            display: none;
+            background: #f7faff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto 30px;
+            border: 1px solid #ddd;
+        }
+
+        .edit-form h3 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Estado vacío */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Footer */
+        .footer {
+          background:rgb(0, 0, 0);
+          color: white;
+          text-align: center;
+          padding: 15px 0;
+          margin-top: 50px;
+          font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .form-row {
+            flex-direction: column;
+          }
+          
+          .header-mapache h1 {
+            font-size: 24px;
+          }
+          
+          .page-title {
+            font-size: 22px;
+          }
+          
+          .button-container {
+            flex-direction: column;
+            gap: 10px;
+          }
+          
+          .btn-volver, .btn-registrar {
+            margin: 5px 0;
+          }
+
+          .main-container {
+            padding: 20px 15px;
+          }
+
+          .agregar-section, .edit-form {
+            padding: 20px;
+          }
+
+          .tabla-tipos {
+            font-size: 14px;
+          }
+
+          .tabla-tipos th, .tabla-tipos td {
+            padding: 10px 8px;
+          }
         }
     </style>
     <script>
@@ -254,103 +556,127 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </head>
 <body>
-    <h1>Gestión de Tipos de Pago</h1>
-    
-    <nav>
-        <ul>
-            <li><a href="../home.php">Volver al inicio</a></li>
-            <li><a href="../equipos/crearEquipos.php">Registrar Equipo</a></li>
-        </ul>
-    </nav>
-    
-    <?php if (!empty($mensaje)): ?>
-        <script>
-            alert("<?= addslashes($mensaje) ?>");
-        </script>
-    <?php endif; ?>
-    
-    <?php if (!empty($error)): ?>
-        <script>
-            alert("Error: <?= addslashes($error) ?>");
-        </script>
-    <?php endif; ?>
-    
-    <h2>Tipos de Pago Existentes</h2>
-    
-    <?php if (empty($tiposMantenimiento)): ?>
-        <p>No hay tipos de Pago definidos. Por favor, agregue uno a continuación.</p>
-    <?php else: ?>
-        <table>
-            <thead>
-                <tr>
-                    <th>Valor</th>
-                    <th>Etiqueta</th>
-                    <th>Descripción</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($tiposMantenimiento as $valor => $datos): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($valor) ?></td>
-                        <td><?= htmlspecialchars($datos['label']) ?></td>
-                        <td><?= htmlspecialchars($datos['descripcion'] ?? '') ?></td>
-                        <td>
-                            <button class="accion" onclick="mostrarFormularioEdicion('<?= htmlspecialchars(addslashes($valor)) ?>', '<?= htmlspecialchars(addslashes($datos['label'])) ?>', '<?= htmlspecialchars(addslashes($datos['descripcion'] ?? '')) ?>')">Editar</button>
-                            
-                            <?php if (!in_array($valor, ['mantenimientoCompleto', 'mantenimientoManoObra', 'mantenimientoFacturable', 'mantenimientoGarantia'])): ?>
-                                <form method="post" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este tipo de Pago?');">
-                                    <button type="submit" name="eliminar_tipo" value="<?= htmlspecialchars($valor) ?>" class="accion">Eliminar</button>
-                                </form>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
-    
-    <h2>Agregar Nuevo Tipo de Pago</h2>
-    <form method="post" action="" id="agregar-form" onsubmit="return validarFormulario()">
-        <div class="form-group">
-            <label for="valor">Valor (identificador único):</label>
-            <input type="text" id="valor" name="valor" pattern="[a-z0-9_]+" 
-                   title="Solo letras minúsculas, números o guiones bajos" required>
-            <small>Este valor se usa internamente. Solo use letras minúsculas, números y guiones bajos, sin espacios.</small>
-        </div>
-        <div class="form-group">
-            <label for="etiqueta">Etiqueta (nombre visible):</label>
-            <input type="text" id="etiqueta" name="etiqueta" required>
-            <small>Este es el nombre que se mostrará a los clientes.</small>
-        </div>
-        <div class="form-group">
-            <label for="descripcion">Descripción:</label>
-            <textarea id="descripcion" name="descripcion"></textarea>
-            <small>Descripción detallada del tipo de Pago.</small>
-        </div>
-        <div>
-            <button type="submit" name="agregar_tipo">Agregar Tipo de Pago</button>
-        </div>
-    </form>
-    
-    <div id="formulario-edicion" class="edit-form">
-        <h3 id="titulo-edicion">Editar tipo de Pago</h3>
-        <form method="post" action="" id="editar-form" onsubmit="return validarFormularioEdicion()">
-            <input type="hidden" id="tipo_editar" name="tipo_editar" value="">
-            
-            <div class="form-group">
-                <label for="nueva_etiqueta">Etiqueta:</label>
-                <input type="text" id="nueva_etiqueta" name="nueva_etiqueta" required>
-            </div>
-            <div class="form-group">
-                <label for="nueva_descripcion">Descripción:</label>
-                <textarea id="nueva_descripcion" name="nueva_descripcion"></textarea>
-            </div>
-            <div>
-                <button type="submit" name="editar_tipo">Guardar Cambios</button>
-            </div>
-        </form>
+    <!-- Header -->
+    <div class="header-mapache">
+        <h1>Mapache Security</h1>
+       <a href="../home.php" class="home-icon">
+        <i class="fas fa-home"></i>
+        </a>
     </div>
+
+    <!-- Contenido principal -->
+    <div class="main-container">
+        <h1 class="page-title">Gestión de Tipos de Pago</h1>
+        
+        <!-- Botones -->
+        <div class="button-container">
+            <a href="../home.php" class="btn-volver">VOLVER AL INICIO</a>
+            <a href="../equipos/crearEquipos.php" class="btn-registrar">REGISTRAR EQUIPO</a>
+        </div>
+
+        <?php if (!empty($mensaje)): ?>
+            <script>
+                alert("<?= addslashes($mensaje) ?>");
+            </script>
+        <?php endif; ?>
+        
+        <?php if (!empty($error)): ?>
+            <script>
+                alert("Error: <?= addslashes($error) ?>");
+            </script>
+        <?php endif; ?>
+
+        <!-- Tabla -->
+        <div class="tabla-container">
+            <?php if (empty($tiposMantenimiento)): ?>
+                <div class="empty-state">
+                    <p>No hay tipos de Pago definidos. Por favor, agregue uno a continuación.</p>
+                </div>
+            <?php else: ?>
+                <table  border= 1 class="tabla-tipos">
+                    <thead>
+                        <tr>
+                            <th>Valor</th>
+                            <th>Etiqueta</th>
+                            <th>Descripción</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($tiposMantenimiento as $valor => $datos): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($valor) ?></td>
+                                <td><?= htmlspecialchars($datos['label']) ?></td>
+                                <td><?= htmlspecialchars($datos['descripcion'] ?? '') ?></td>
+                                <td>
+                                    <button class="action-btn edit-btn" onclick="mostrarFormularioEdicion('<?= htmlspecialchars(addslashes($valor)) ?>', '<?= htmlspecialchars(addslashes($datos['label'])) ?>', '<?= htmlspecialchars(addslashes($datos['descripcion'] ?? '')) ?>')">Editar</button>
+                                    
+                                    <?php if (!in_array($valor, ['mantenimientoCompleto', 'mantenimientoManoObra', 'mantenimientoFacturable', 'mantenimientoGarantia'])): ?>
+                                        <form method="post" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este tipo de Pago?');">
+                                            <button type="submit" name="eliminar_tipo" value="<?= htmlspecialchars($valor) ?>" class="action-btn delete-btn">Eliminar</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <!-- Formulario Agregar -->
+        <div class="agregar-section">
+            <h2>Agregar Nuevo Tipo de Pago</h2>
+            
+            <form method="post" action="" id="agregar-form" onsubmit="return validarFormulario()">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="valor">Valor (identificador único)</label>
+                        <input type="text" id="valor" name="valor" pattern="[a-z0-9_]+" 
+                               title="Solo letras minúsculas, números o guiones bajos" required>
+                        <small>Este valor se usa internamente. Solo use letras minúsculas, números y guiones bajos, sin espacios.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="etiqueta">Etiqueta (nombre visible)</label>
+                        <input type="text" id="etiqueta" name="etiqueta" required>
+                        <small>Este es el nombre que se mostrará a los clientes.</small>
+                    </div>
+                </div>
+                
+                <div class="form-group-full">
+                    <label for="descripcion">Descripción:</label>
+                    <textarea id="descripcion" name="descripcion" placeholder="Descripción detallada del tipo de pago"></textarea>
+                    <div class="help-text">Descripción detallada del tipo de Pago.</div>
+                </div>
+                
+                <button type="submit" name="agregar_tipo" class="btn-agregar">AGREGAR TIPO DE PAGO</button>
+            </form>
+        </div>
+
+        <!-- Formulario de Edición -->
+        <div id="formulario-edicion" class="edit-form">
+            <h3 id="titulo-edicion">Editar tipo de Pago</h3>
+            
+            <form method="post" action="" id="editar-form" onsubmit="return validarFormularioEdicion()">
+                <input type="hidden" id="tipo_editar" name="tipo_editar" value="">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nueva_etiqueta">Etiqueta</label>
+                        <input type="text" id="nueva_etiqueta" name="nueva_etiqueta" required>
+                    </div>
+                </div>
+                <div class="form-group-full">
+                    <label for="nueva_descripcion">Descripción</label>
+                    <textarea id="nueva_descripcion" name="nueva_descripcion"></textarea>
+                </div>
+                <button type="submit" name="editar_tipo" class="btn-agregar">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">©Copyright 2025</div>
 
     <script>
         // Validación del formulario de agregar

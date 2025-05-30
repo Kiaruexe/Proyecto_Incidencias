@@ -1,436 +1,567 @@
 <?php
-session_start();
-$mensajeError = '';
-if (isset($_POST['registrar'])) {
-  function limpiarCampo($valor)
-  {
-    return !empty($valor) ? $valor : null;
-  }
-  $usuario = $_POST['usuario'] ?? null;
-  $correo = $_POST['correo'] ?? null;
-  $contrasenaTexto = $_POST['contrasena'] ?? null;
-  $permiso = $_POST['permiso'] ?? null;
-  $cpFiscal = limpiarCampo($_POST['cpFiscal'] ?? '');
-  $provinciaFiscal = limpiarCampo($_POST['provinciaFiscal'] ?? '');
-  $localidadFiscal = limpiarCampo($_POST['localidadFiscal'] ?? '');
-  $direccionFiscal = limpiarCampo($_POST['direccionFiscal'] ?? '');
-  $cp1 = limpiarCampo($_POST['cp1'] ?? '');
-  $provincia1 = limpiarCampo($_POST['provincia1'] ?? '');
-  $localidad1 = limpiarCampo($_POST['localidad1'] ?? '');
-  $direccion1 = limpiarCampo($_POST['direccion1'] ?? '');
-  $cp2 = limpiarCampo($_POST['cp2'] ?? '');
-  $provincia2 = limpiarCampo($_POST['provincia2'] ?? '');
-  $localidad2 = limpiarCampo($_POST['localidad2'] ?? '');
-  $direccion2 = limpiarCampo($_POST['direccion2'] ?? '');
-  try {
-    $bd = new PDO(
-      'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa',
-      'Mapapli',
-      '9R%d5cf62',
-      [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
-    $sql = "SELECT COUNT(*) FROM Usuarios WHERE usuario = ? OR correo = ?";
-    $stmt = $bd->prepare($sql);
-    $stmt->execute([$usuario, $correo]);
-    if ($stmt->fetchColumn() > 0) {
-      $mensajeError = '⚠️ Ya existe un usuario con ese nombre o correo electrónico.';
-    } else {
-      $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
-      $bd->beginTransaction();
-      $sql = "INSERT INTO Usuarios (
+// Verificar si es una petición POST con datos de usuario
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {  
+    function limpiarCampo($valor) {
+        return !empty($valor) ? $valor : null; 
+    }
+
+    $usuario           = $_POST['usuario']           ?? null;
+    $correo            = $_POST['correo']            ?? null;
+    $contrasenaTexto   = $_POST['contrasena']        ?? null;
+    $permiso           = $_POST['permiso']           ?? null;
+    $cpFiscal          = limpiarCampo($_POST['cpFiscal'] ?? '');
+    $provinciaFiscal   = limpiarCampo($_POST['provinciaFiscal'] ?? '');
+    $localidadFiscal   = limpiarCampo($_POST['localidadFiscal'] ?? '');
+    $direccionFiscal   = limpiarCampo($_POST['direccionFiscal'] ?? '');
+    $cp1               = limpiarCampo($_POST['cp1'] ?? '');
+    $provincia1        = limpiarCampo($_POST['provincia1'] ?? '');
+    $localidad1        = limpiarCampo($_POST['localidad1'] ?? '');
+    $direccion1        = limpiarCampo($_POST['direccion1'] ?? '');
+    $cp2               = limpiarCampo($_POST['cp2'] ?? '');
+    $provincia2        = limpiarCampo($_POST['provincia2'] ?? '');
+    $localidad2        = limpiarCampo($_POST['localidad2'] ?? '');
+    $direccion2        = limpiarCampo($_POST['direccion2'] ?? '');
+
+    // Validación de campos obligatorios
+    if (empty($usuario) || empty($correo) || empty($contrasenaTexto) || empty($permiso)) {
+        echo "<script>
+                alert('⚠️ Por favor, complete todos los campos obligatorios (usuario, correo, contraseña y permiso).');
+                history.back();
+              </script>";
+        exit;
+    }
+
+    try {
+        $bd = new PDO(
+            'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa', 
+            'Mapapli', 
+            '9R%d5cf62',
+            [ 
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]
+        );
+
+        // Verificar duplicados
+        $sql = "SELECT COUNT(*) FROM Usuarios WHERE usuario = ? OR correo = ?";
+        $stmt = $bd->prepare($sql);
+        $stmt->execute([$usuario, $correo]);
+        $count = $stmt->fetchColumn();
+
+        if ($count > 0) {
+            echo "<script>
+                    alert('⚠️ Ya existe un usuario con ese nombre o correo electrónico. Por favor, utilice otros datos.');
+                    history.back();
+                  </script>";
+            exit;
+        } else {
+            // Proceder con el registro
+            $contrasenaHash = password_hash($contrasenaTexto, PASSWORD_DEFAULT);
+            
+            // Iniciar transacción
+            $bd->beginTransaction();
+            
+            $sql = "INSERT INTO Usuarios (
                 usuario, correo, contrasena, permiso,
                 cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
                 cp1, provincia1, localidad1, direccion1,
                 cp2, provincia2, localidad2, direccion2
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-      $stmt = $bd->prepare($sql);
-      $resultado = $stmt->execute([
-        $usuario,
-        $correo,
-        $contrasenaHash,
-        $permiso,
-        $cpFiscal,
-        $provinciaFiscal,
-        $localidadFiscal,
-        $direccionFiscal,
-        $cp1,
-        $provincia1,
-        $localidad1,
-        $direccion1,
-        $cp2,
-        $provincia2,
-        $localidad2,
-        $direccion2
-      ]);
-      if ($resultado) {
-        $bd->commit();
-        echo "<script>
+            
+            $stmt = $bd->prepare($sql);
+            
+            $params = [
+                $usuario,
+                $correo,
+                $contrasenaHash,
+                $permiso,
+                $cpFiscal,
+                $provinciaFiscal,
+                $localidadFiscal,
+                $direccionFiscal,
+                $cp1,
+                $provincia1,
+                $localidad1,
+                $direccion1,
+                $cp2,
+                $provincia2,
+                $localidad2,
+                $direccion2
+            ];
+            
+            $resultado = $stmt->execute($params);
+            
+            if ($resultado) {
+                // Confirmar la transacción
+                $bd->commit();
+                
+                // Mostrar mensaje de éxito y redirigir
+                echo "<script>
                         alert('✅ Usuario registrado con éxito.');
                         window.location.href = '../home.php';
                       </script>";
-        exit;
-      } else {
-        $bd->rollBack();
-        $mensajeError = "Error al insertar el usuario.";
-      }
+                exit;
+            } else {
+                // Revertir la transacción
+                $bd->rollBack();
+                throw new Exception("Error al insertar el usuario");
+            }
+        }
+    } catch (PDOException $e) {
+        // Revertir transacción si está activa
+        if (isset($bd) && $bd->inTransaction()) {
+            $bd->rollBack();
+        }
+        
+        echo "<script>
+                alert('⚠️ Error al registrar el usuario: " . addslashes($e->getMessage()) . "');
+              </script>";
+    } catch (Exception $e) {
+        // Revertir transacción si está activa
+        if (isset($bd) && $bd->inTransaction()) {
+            $bd->rollBack();
+        }
+        
+        echo "<script>
+                alert('⚠️ " . addslashes($e->getMessage()) . "');
+              </script>";
     }
-  } catch (PDOException $e) {
-    if (isset($bd) && $bd->inTransaction()) {
-      $bd->rollBack();
-    }
-    $mensajeError = '⚠️ Error al registrar el usuario: ' . $e->getMessage();
-  }
 }
 ?>
+
 <!DOCTYPE html>
-<html lang="es">
-
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registrar Usuario - Mapache Security</title>
-  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
-  <link rel="stylesheet" href="../css/style.css">
-  <style>
-    body {
-      background: #f0f2f5;
+    <meta charset="UTF-8">
+    <title>Registro de Usuarios</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+    <style>
+        * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
 
-    header,
-    footer {
-      color: #fff;
+  body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: white;
+        min-height: 100vh;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header principal */
+    .header-mapache {
+      background: #002255;
+      color: white;
+      padding: 15px 0;
       text-align: center;
-      padding: 15px;
+      position: relative;
+      flex-shrink: 0; /* Evita que el header se comprima */
     }
 
-    header {
-      background: #00225a;
-      padding: 20px;
-    }
-
-    footer {
-      background: #000000;
+    .header-mapache h1 {
+      font-size: 32px;
       font-weight: bold;
+      margin: 0;
     }
 
-    header .brand {
-      font-weight: bold;
-      font-size: 2.5rem;
+    /* Icono de casa en la esquina superior derecha */
+    .home-icon {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+        padding: 5px;
+        border-radius: 4px;
+    }
+    .home-icon .fas {
+        color: white;
+        font-size: 24px;
+    }
+    .home-icon:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
 
-    .container {
-      max-width: 90%;
-      margin: 100px auto 40px;
-      background: #f1f2f2;
-      padding: 30px;
-      border: 2px solid #00225a;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Contenedor principal que crece para empujar el footer */
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 20px;
     }
 
-    h1 {
-      margin-bottom: 20px;
-      color: #00225a;
-      text-align: center;
+    /* Título del formulario */
+    .form-title {
+        text-align: center;
+        font-size: 2rem;
+        color: #333;
+        margin: 30px 0;
+        font-weight: 600;
+        margin-right: 300px;
+
     }
 
+    /* Contenedor principal del formulario */
     .form-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .datos-basicos {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      max-width: 400px;
+      max-width: 1000px;
       margin: 0 auto;
-    }
-
-    .permiso-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-      margin: 20px 0;
-    }
-
-    .permiso-section label,
-    .permiso-section select {
-      max-width: 300px;
-      width: 100%;
-    }
-
-    .direcciones-section {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .buttons-container {
+      padding: 0 20px;
       display: flex;
       justify-content: center;
-      gap: 15px;
-      margin-top: 20px;
+      align-items: flex-start;
+      flex: 1;
+      margin: 0 auto;
+      margin-right: 500px;
+  }
+
+  .volver-home {
+        text-align: center;
+        margin-top: 10px;
+        margin-right: 300px;
+        
     }
 
-    .btn {
-      padding: 10px 20px;
-      background: #2573fa;
-      color: #fff;
-      border: none;
-      border-radius: 20px;
-      font-size: 1rem;
-      cursor: pointer;
+    .btn-modificar {
       text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      max-width: 200px;
+        margin-top: 15px;
+        margin-left: 300px;
     }
 
-    input[type="submit"].btn {
-      width: auto;
+    /* Formulario con fondo azul claro y caja contenedora */
+    form {
+        background: #e6f3ff;
+        padding: 40px;
+        border: 3px solid #000;
+        border-radius: 0;
+        width: 100%;
+        max-width: 900px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
     }
 
+    /* Grid compacto para los campos principales */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 25px;
+        align-items: end;
+    }
+
+    /* Grupo de campo más compacto */
+    .campo-grupo {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+    }
+
+    /* Labels más pequeños */
     label {
-      display: block;
-      margin-top: 5px;
-      font-weight: 500;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
     }
 
+    /* Inputs más compactos */
     input[type="text"],
     input[type="email"],
     input[type="password"],
     input[type="number"],
-    select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
+    input[type="date"],
+    select,
+    textarea {
+        padding: 8px 12px;
+        border: 2px solid #333;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        background: white;
+        outline: none;
+        height: 38px;
+        margin-bottom: 10px;
     }
 
+    /* Inputs redondeados para campos específicos */
+    input[name*="cp"], 
+    input[name*="provincia"], 
+    input[name*="localidad"], 
+    input[name*="direccion"] {
+        border-radius: 25px;
+        padding: 8px 16px;
+    }
+
+    /* Select normal */
+    select:not([multiple]) {
+        height: 38px;
+    }
+
+    /* Botones */
+    .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 30px;
+    }
+
+    .btn,
+    input[type="submit"],
+    button {
+        background: #2563eb;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn:hover,
     input[type="submit"]:hover,
-    .btn:hover {
-      background: #1e60d2;
+    button:hover {
+        background: #1d4ed8;
     }
 
-    .btn-home {
-      background: #00225a;
+    /* Secciones de direcciones */
+    #direcciones-container h3 {
+        color: #333;
+        margin: 20px 0 10px 0;
+        font-size: 1.2rem;
+        border-bottom: 2px solid #333;
+        padding-bottom: 5px;
     }
 
-    .btn-home:hover {
-      background: #001845;
+    /* Enlaces */
+    a {
+        color: #2563eb;
+        text-decoration: none;
+        margin: 20px 0;
+        display: inline-block;
     }
 
-    .error-message {
-      background-color: #ffdddd;
-      color: #900;
-      padding: 10px;
-      border: 1px solid #f00;
-      border-radius: 5px;
-      text-align: center;
+    a:hover {
+        text-decoration: underline;
     }
 
-    .direccion-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
+    /* Footer fijo en la parte inferior */
+    .footer {
+        background: rgb(0, 0, 0);
+        color: white;
+        text-align: center;
+        padding: 15px 0;
+        font-size: 14px;
+        flex-shrink: 0; /* Evita que el footer se comprima */
+        margin-top: auto; /* Empuja el footer hacia abajo */
     }
 
-    .direccion-row label {
-      margin-top: 0;
-    }
-
-    .direccion-row .campo {
-      flex: 1;
-    }
-
-    h2 {
-      margin-top: 20px;
-      margin-bottom: 10px;
-      font-size: 1.3rem;
-      color: #00225a;
-    }
-
+    /* Responsivo mejorado */
     @media (max-width: 768px) {
-      .container {
-        margin: 80px 10px 20px;
-        padding: 20px;
+        .form-container {
+            max-width: 100%;
+            padding: 0 15px;
+        }
+
+        form {
+            padding: 25px;
+            max-width: 100%;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .button-container {
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-mapache h1 {
+            font-size: 24px;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+        }
+    }
+
+    /* Ajuste para pantallas grandes */
+    @media (min-width: 1200px) {
+        .form-container {
+            max-width: 900px;
+        }
+    }
+      </style>
+    <script>
+      // Mostrar/ocultar direcciones + asignar/quitar "required"
+      function toggleCampos() {
+        const permisoSelect = document.getElementById('permiso');
+        const valorPermiso = permisoSelect.value;
+        
+        const direccionesContainer = document.getElementById('direcciones-container');
+        const camposFiscales = document.querySelectorAll('.fiscal-field');
+
+        if (valorPermiso === 'cliente') {
+          direccionesContainer.style.display = 'block';
+          camposFiscales.forEach(campo => {
+            campo.setAttribute('required', 'true');
+          });
+        } else {
+          direccionesContainer.style.display = 'none';
+          camposFiscales.forEach(campo => {
+            campo.removeAttribute('required');
+          });
+        }
       }
 
-      .direccion-row {
-        flex-direction: column;
-        gap: 5px;
+      // Función mejorada para prevenir envíos duplicados
+      function prevenirEnvioDuplicado() {
+        const form = document.getElementById('registro-form');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        if (form && submitBtn) {
+          form.addEventListener('submit', function(e) {
+            // Deshabilitar el botón después del primer clic
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Procesando...';
+            return true;
+          });
+        }
       }
 
-      .datos-basicos {
-        max-width: 100%;
+      // Función para validar antes del envío
+      function validarFormulario() {
+        const usuario = document.querySelector('input[name="usuario"]').value.trim();
+        const correo = document.querySelector('input[name="correo"]').value.trim();
+        const contrasena = document.querySelector('input[name="contrasena"]').value.trim();
+        const permiso = document.querySelector('select[name="permiso"]').value;
+
+        if (!usuario || !correo || !contrasena || !permiso) {
+          alert('Por favor, complete todos los campos obligatorios');
+          return false;
+        }
+
+        // Validación específica para clientes
+        if (permiso === 'cliente') {
+          const cpFiscal = document.querySelector('input[name="cpFiscal"]').value.trim();
+          const provinciaFiscal = document.querySelector('input[name="provinciaFiscal"]').value.trim();
+          const localidadFiscal = document.querySelector('input[name="localidadFiscal"]').value.trim();
+          const direccionFiscal = document.querySelector('input[name="direccionFiscal"]').value.trim();
+
+          if (!cpFiscal || !provinciaFiscal || !localidadFiscal || !direccionFiscal) {
+            alert('Para usuarios tipo "Cliente", todos los campos fiscales son obligatorios');
+            return false;
+          }
+        }
+
+        return confirm('¿Estás seguro de registrar este usuario?');
       }
-    }
-  </style>
-  <script>
-    function toggleCampos() {
-      const permiso = document.getElementById('permiso').value;
-      const cont = document.getElementById('direcciones-container');
-      cont.style.display = permiso === 'cliente' ? 'block' : 'none';
-      document.querySelectorAll('.fiscal-field').forEach(f => {
-        permiso === 'cliente' ? f.setAttribute('required', '') : f.removeAttribute('required');
+
+      document.addEventListener('DOMContentLoaded', () => {
+        toggleCampos(); 
+        document.getElementById('permiso').addEventListener('change', toggleCampos);
+        prevenirEnvioDuplicado();
       });
-    }
-    function prevenirEnvio() {
-      const btn = document.querySelector('input[type="submit"]');
-      document.getElementById('registro-form').addEventListener('submit', () => {
-        btn.disabled = true;
-        btn.value = 'Registrando…';
-      });
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      toggleCampos();
-      document.getElementById('permiso').addEventListener('change', toggleCampos);
-      prevenirEnvio();
-    });
-  </script>
+    </script>
 </head>
-
 <body>
-  <header>
-    <div class="brand">Mapache Security</div>
-  </header>
-  <div class="container">
-    <h1>Registrar nuevo usuario</h1>
-    <?php if (!empty($mensajeError)): ?>
-      <div class="error-message"><?= $mensajeError; ?></div>
-    <?php endif; ?>
-    <form method="post" id="registro-form" class="form-container">
-      <div class="datos-basicos">
-        <div>
-          <label for="usuario">Nombre de usuario:</label>
-          <input type="text" id="usuario" name="usuario" required
-            value="<?= htmlspecialchars($_POST['usuario'] ?? ''); ?>">
+    <!-- Header principal -->
+    <div class="header-mapache">
+        <h1>Mapache Security</h1>
+        <a href="../home.php" class="home-icon">
+            <i class="fas fa-home"></i>
+        </a>
+    </div>
+    <div class="main-content">
+        <h1 class="form-title">Crear Usuario</h1>
+        
+        <div class="form-container">
+            <form method="post" id="registro-form" onsubmit="return validarFormulario()">
+                <label>Nombre de usuario: *</label>
+                <input type="text" name="usuario" placeholder="Cliente actual" required>
+
+                <label>Correo: *</label>
+                <input type="email" name="correo" placeholder="correo@ejemplo.com" required>
+
+                <label>Contraseña: *</label>
+                <input type="password" name="contrasena" placeholder="Nueva contraseña" required>
+
+                <label>Permiso: *</label>
+                <select name="permiso" id="permiso" required>
+                    <option value="">Seleccione un permiso</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="recepcion">Recepción</option>
+                    <option value="tecnico">Técnico</option>
+                    <option value="admin">Admin</option>
+                    <option value="jefeTecnico">Jefe Técnico</option>
+                </select>
+
+                <div id="direcciones-container">
+                    <h3>Dirección Fiscal</h3>
+                    <label>CP Fiscal:</label>
+                    <input type="number" name="cpFiscal" placeholder="12345" class="fiscal-field">
+
+                    <label>Provincia Fiscal:</label>
+                    <input type="text" name="provinciaFiscal" placeholder="Provincia" class="fiscal-field">
+
+                    <label>Localidad Fiscal:</label>
+                    <input type="text" name="localidadFiscal" placeholder="Localidad" class="fiscal-field">
+
+                    <label>Dirección Fiscal:</label>
+                    <input type="text" name="direccionFiscal" placeholder="Calle 123" class="fiscal-field">
+
+                    <h3>Primera dirección adicional</h3>
+                    <label>CP:</label>
+                    <input type="number" name="cp1" placeholder="54321">
+
+                    <label>Provincia:</label>
+                    <input type="text" name="provincia1" placeholder="Provincia">
+
+                    <label>Localidad:</label>
+                    <input type="text" name="localidad1" placeholder="Localidad">
+
+                    <label>Dirección:</label>
+                    <input type="text" name="direccion1" placeholder="Calle 456">
+
+                    <h3>Segunda dirección adicional</h3>
+                    <label>CP:</label>
+                    <input type="number" name="cp2" placeholder="67890">
+
+                    <label>Provincia:</label>
+                    <input type="text" name="provincia2" placeholder="Provincia">
+
+                    <label>Localidad:</label>
+                    <input type="text" name="localidad2" placeholder="Localidad">
+
+                    <label>Dirección:</label>
+                    <input type="text" name="direccion2" placeholder="Calle 789">
+                </div>
+                
+                <input type="hidden" name="accion" value="registrar">
+                
+                <div class="btn-modificar">
+                    <input type="submit" value="Registrar Usuario" id="submit-btn">
+                </div>
+            </form>
         </div>
+        
+        <p class="volver-home">
+            <a href="../home.php">Volver al home</a>
+        </p>
+    </div>
 
-        <div>
-          <label for="correo">Correo:</label>
-          <input type="email" id="correo" name="correo" required
-            value="<?= htmlspecialchars($_POST['correo'] ?? ''); ?>">
-        </div>
-
-        <div>
-          <label for="contrasena">Contraseña:</label>
-          <input type="password" id="contrasena" name="contrasena" required>
-        </div>
-      </div>
-
-      <div class="permiso-section">
-        <label for="permiso">Permiso:</label>
-        <select id="permiso" name="permiso">
-          <?php foreach (['cliente', 'recepcion', 'tecnico', 'admin', 'jefeTecnico'] as $opt): ?>
-            <option value="<?= $opt; ?>" <?= (($_POST['permiso'] ?? '') === $opt ? 'selected' : ''); ?>>
-              <?= ucfirst($opt); ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-
-      <div id="direcciones-container" class="direcciones-section">
-        <div>
-          <h2>Dirección Fiscal</h2>
-          <div class="direccion-row">
-            <div class="campo">
-              <label for="cpFiscal">CP Fiscal:</label>
-              <input type="number" id="cpFiscal" name="cpFiscal" class="fiscal-field"
-                value="<?= htmlspecialchars($_POST['cpFiscal'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="provinciaFiscal">Provincia Fiscal:</label>
-              <input type="text" id="provinciaFiscal" name="provinciaFiscal" class="fiscal-field"
-                value="<?= htmlspecialchars($_POST['provinciaFiscal'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="localidadFiscal">Localidad Fiscal:</label>
-              <input type="text" id="localidadFiscal" name="localidadFiscal" class="fiscal-field"
-                value="<?= htmlspecialchars($_POST['localidadFiscal'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="direccionFiscal">Dirección Fiscal:</label>
-              <input type="text" id="direccionFiscal" name="direccionFiscal" class="fiscal-field"
-                value="<?= htmlspecialchars($_POST['direccionFiscal'] ?? ''); ?>">
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2>Primera dirección adicional</h2>
-          <div class="direccion-row">
-            <div class="campo">
-              <label for="cp1">CP:</label>
-              <input type="number" id="cp1" name="cp1" value="<?= htmlspecialchars($_POST['cp1'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="provincia1">Provincia:</label>
-              <input type="text" id="provincia1" name="provincia1"
-                value="<?= htmlspecialchars($_POST['provincia1'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="localidad1">Localidad:</label>
-              <input type="text" id="localidad1" name="localidad1"
-                value="<?= htmlspecialchars($_POST['localidad1'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="direccion1">Dirección:</label>
-              <input type="text" id="direccion1" name="direccion1"
-                value="<?= htmlspecialchars($_POST['direccion1'] ?? ''); ?>">
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2>Segunda dirección adicional</h2>
-          <div class="direccion-row">
-            <div class="campo">
-              <label for="cp2">CP:</label>
-              <input type="number" id="cp2" name="cp2" value="<?= htmlspecialchars($_POST['cp2'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="provincia2">Provincia:</label>
-              <input type="text" id="provincia2" name="provincia2"
-                value="<?= htmlspecialchars($_POST['provincia2'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="localidad2">Localidad:</label>
-              <input type="text" id="localidad2" name="localidad2"
-                value="<?= htmlspecialchars($_POST['localidad2'] ?? ''); ?>">
-            </div>
-
-            <div class="campo">
-              <label for="direccion2">Dirección:</label>
-              <input type="text" id="direccion2" name="direccion2"
-                value="<?= htmlspecialchars($_POST['direccion2'] ?? ''); ?>">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="buttons-container">
-        <input type="submit" name="registrar" value="Registrar Usuario" class="btn">
-        <a href="../home.php" class="btn btn-home">Volver a Inicio</a>
-      </div>
-    </form>
-  </div>
-  <footer>
-    &copy; <?= date('Y'); ?> Mapache Security
-  </footer>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2025 Todos los derechos reservados.</p>
+    </div>
 </body>
-
 </html>

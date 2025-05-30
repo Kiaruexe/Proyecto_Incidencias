@@ -152,31 +152,6 @@ $tiposEquipo = array (
       5 => 'ubicacion',
     ),
   ),
-  'ghy' => 
-  array (
-    'label' => 'Telefono',
-    'prefijo' => 'Tel',
-    'campos' => 
-    array (
-      0 => 'marca',
-      1 => 'modelo',
-      2 => 'observaciones',
-      3 => 'costo',
-      4 => 'ubicacion',
-    ),
-  ),
-  'ghyrr' => 
-  array (
-    'label' => 'Movil',
-    'prefijo' => 'Mo',
-    'campos' => 
-    array (
-      0 => 'marca',
-      1 => 'modelo',
-      2 => 'observaciones',
-      3 => 'costo',
-    ),
-  ),
   'tab' => 
   array (
     'label' => 'Tablet',
@@ -188,6 +163,21 @@ $tiposEquipo = array (
       2 => 'serie',
       3 => 'observaciones',
       4 => 'costo',
+    ),
+  ),
+  'disco' => 
+  array (
+    'label' => 'Disco',
+    'prefijo' => 'Dis',
+    'campos' => 
+    array (
+      0 => 'marca',
+      1 => 'modelo',
+      2 => 'memoria',
+      3 => 'observaciones',
+      4 => 'costo',
+      5 => 'ubicacion',
+      6 => 'tipo',
     ),
   ),
 );

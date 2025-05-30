@@ -1,207 +1,666 @@
 <?php
-// Inicia la sesión y verifica si el usuario está autenticado
 session_start();
 if (!isset($_SESSION["idUsuario"])) {
-  header("Location: ../login.php"); // Redirige al login si no hay sesión
+  header("Location: ../login.php");
   exit;
 }
 
+function registrarLog(PDO $bd, string $accion, string $descripcion, string $usuario): void
+{
+  try {
+    $stmt = $bd->prepare("
+      INSERT INTO `Log` (`accion`, `descripcion`, `fecha`, `usuario`)
+      VALUES (?, ?, NOW(), ?)
+    ");
+    $stmt->execute([$accion, $descripcion, $usuario]);
+  } catch (Exception $e) {
+    error_log("Fallo registrarLog(): " . $e->getMessage());
+  }
+}
+
 try {
-  // Conexión a la base de datos y obtención de datos del usuario autenticado
   $bd = new PDO(
     'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8',
     'Mapapli',
     '9R%d5cf62'
   );
-  // Se obtiene la información del usuario mediante su ID
+  $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
   $query = $bd->prepare("SELECT * FROM Usuarios WHERE idUsuarios = ?");
   $query->execute([$_SESSION['idUsuario']]);
   $userRow = $query->fetch();
-  // Se normaliza el permiso a minúsculas
   $permiso = strtolower($userRow['permiso']);
+  $nombreUsuario = $userRow['usuario'];
 } catch (PDOException $e) {
-  echo "Error: " . $e->getMessage(); // Muestra error de conexión
+  echo "Error: " . $e->getMessage();
   exit;
 }
 
-/* 
-  Para usuarios con permiso 'recepcion', 'admin' o 'jefetecnico' se requiere seleccionar un cliente.
-  Si se envía el formulario de selección, se redirige a este mismo archivo con el parámetro GET 'clienteElegido'
-  y se conserva el contenido previamente escrito en el textarea "incidencia".
-*/
-$incidenciaPrev = $_POST['incidencia'] ?? '';
-if (($permiso == 'recepcion' || $permiso == 'admin' || $permiso == 'jefetecnico') && isset($_POST['elegirCliente'])) {
-  $clienteElegido = $_POST['cliente'] ?? '';
-  if (!empty($clienteElegido)) {
-    header("Location: " . $_SERVER['PHP_SELF'] . "?clienteElegido=" . urlencode($clienteElegido) . "&incidenciaPrev=" . urlencode($incidenciaPrev));
-    exit;
-  }
-}
-
-// Para usuarios con permiso 'cliente', se verifica que tengan equipos asignados
-$tieneEquipos = false;
-if ($permiso == 'cliente') {
-  try {
-    $qEquipos = $bd->prepare("SELECT COUNT(*) FROM Equipos WHERE idUsuario = ?");
-    $qEquipos->execute([$_SESSION['idUsuario']]);
-    $numEquipos = $qEquipos->fetchColumn();
-    $tieneEquipos = $numEquipos > 0;
-  } catch (PDOException $e) {
-    echo "<p style='color:red;'>Error verificando equipos.</p>";
-  }
-}
-
-// Definir los campos permitidos para el filtrado, usando el nombre completo de la tabla
 $allowedFields = [
-    'idIncidencias'   => 'Incidencias.idIncidencias',
-    'fecha'           => 'Incidencias.fecha',
-    'tecnicoAsignado' => 'Incidencias.tecnicoAsignado',
-    'incidencia'      => 'Incidencias.incidencia',
-    'usuario'         => 'Usuarios.usuario',
-    'numEquipo'       => 'Incidencias.numEquipo',
-    'estado'          => 'Incidencias.estado'
+  'idIncidencias' => 'Incidencias.idIncidencias',
+  'fecha' => 'Incidencias.fecha',
+  'nombre' => 'Incidencias.nombre',
+  'numero' => 'Incidencias.numero',
+  'correo' => 'Incidencias.correo',
+  'incidencia' => 'Incidencias.incidencia',
+  'observaciones' => 'Incidencias.observaciones',
+  'TDesplazamiento' => 'Incidencias.TDesplazamiento',
+  'TIntervencion' => 'Incidencias.TIntervencion',
+  'tecnicoAsignado' => 'Incidencias.tecnicoAsignado',
+  'usuario' => 'Usuarios.usuario',
+  'numEquipo' => 'Incidencias.numEquipo',
+  'estado' => 'Incidencias.estado',
+  'cp' => 'Incidencias.cp',
+  'localidad' => 'Incidencias.localidad',
+  'provincia' => 'Incidencias.provincia',
+  'direccion' => 'Incidencias.direccion',
+  'firma' => 'Incidencias.firma'
 ];
 
-// Obtener el campo y el valor del filtro desde la URL
-$filterField = isset($_GET['filter_field']) && array_key_exists($_GET['filter_field'], $allowedFields)
-    ? $allowedFields[$_GET['filter_field']]
-    : '';
-$filterValue = isset($_GET['filter_value']) ? trim($_GET['filter_value']) : '';
-$filterClause = "";
+$filterField = isset($_GET['filter_field']) && isset($allowedFields[$_GET['filter_field']])
+  ? $allowedFields[$_GET['filter_field']]
+  : '';
+$filterValue = trim($_GET['filter_value'] ?? '');
+$filterClause = '';
 $params = [];
 
-// Si se ha seleccionado un campo y se ha introducido un valor, se hace la comparación exacta
-if ($filterField !== '' && $filterValue !== '') {
+if ($filterField && $filterValue !== '') {
+  if ($_GET['filter_field'] === 'firma') {
+    $fv = strtolower($filterValue);
+    if (in_array($fv, ['true', 'firmado'])) {
+      $filterClause = " AND Incidencias.firma IS NOT NULL AND Incidencias.firma <> ''";
+    } elseif (in_array($fv, ['false', 'sin firmar'])) {
+      $filterClause = " AND (Incidencias.firma IS NULL OR Incidencias.firma = '')";
+    }
+  } else {
     $filterClause = " AND $filterField = ?";
     $params[] = $filterValue;
+  }
 }
-
-// Para mayor control: Solo 'admin' y 'jefetecnico' pueden filtrar por estado
 if ($filterField === 'Incidencias.estado' && !in_array($permiso, ['admin', 'jefetecnico'])) {
-    $filterField = '';
-    $filterClause = '';
-    $params = [];
+  $filterClause = $filterField = '';
+  $params = [];
 }
 
-// Construcción de la consulta según el permiso del usuario
-$sql = "";
-if ($permiso == 'admin' || $permiso == 'recepcion' || $permiso == 'jefetecnico') {
-    // Estos roles pueden ver todas las incidencias
-    $sql = "SELECT Incidencias.*, Usuarios.usuario 
-            FROM Incidencias 
-            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios 
-            WHERE 1=1" . $filterClause;
-} elseif ($permiso == 'cliente') {
-    // Los clientes solo ven sus propias incidencias
-    $sql = "SELECT Incidencias.*, Usuarios.usuario 
-            FROM Incidencias 
-            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios 
+if (in_array($permiso, ['admin', 'recepcion', 'jefetecnico'])) {
+  $sql = "SELECT Incidencias.*, Usuarios.usuario
+            FROM Incidencias
+            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios
+            WHERE 1=1 $filterClause";
+} elseif ($permiso === 'cliente') {
+  $sql = "SELECT Incidencias.*, Usuarios.usuario
+            FROM Incidencias
+            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios
             WHERE Incidencias.idUsuario = ?" . $filterClause;
-    array_unshift($params, $_SESSION['idUsuario']);
-} elseif ($permiso == 'tecnico') {
-    // Los técnicos ven incidencias inactivas asignadas a ellos (comparando con su nombre de usuario)
-    $sql = "SELECT Incidencias.*, Usuarios.usuario 
-            FROM Incidencias 
-            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios 
+  array_unshift($params, $_SESSION['idUsuario']);
+} elseif ($permiso === 'tecnico') {
+  $sql = "SELECT Incidencias.*, Usuarios.usuario
+            FROM Incidencias
+            LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios
             WHERE Incidencias.estado = 0 AND Incidencias.tecnicoAsignado = ?" . $filterClause;
-    array_unshift($params, $userRow['usuario']);
+  array_unshift($params, $userRow['usuario']);
 } else {
-    header("Location: ../login.php");
-    exit;
+  header("Location: ../login.php");
+  exit;
 }
 
 try {
-    // Preparar y ejecutar la consulta con los parámetros correspondientes
-    $stmt = $bd->prepare($sql);
-    $stmt->execute($params);
+  $stmt = $bd->prepare($sql);
+  $stmt->execute($params);
+
+  $descripcionLog = "El usuario '{$nombreUsuario}' con permiso '{$permiso}' ha accedido a verIncidencias";
+  if ($filterField && $filterValue !== '') {
+    $campoFiltro = array_search($filterField, $allowedFields);
+    $descripcionLog .= " con filtro por $campoFiltro = '$filterValue'";
+  }
+  $totalIncidencias = $stmt->rowCount();
+  $descripcionLog .= ". Se encontraron $totalIncidencias incidencias.";
+  registrarLog($bd, 'ver incidencias', $descripcionLog, $nombreUsuario);
+
 } catch (PDOException $e) {
-    echo "Error en la consulta: " . $e->getMessage();
-    exit;
+  echo "Error en la consulta: " . $e->getMessage();
+  registrarLog($bd, 'error en verIncidencias', "Error: " . $e->getMessage(), $nombreUsuario);
+  exit;
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Incidencias</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
   <style>
-      /* Estilos básicos para la tabla y formulario */
-      table {
-          width: 100%;
-          border-collapse: collapse;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav {
+      background-color: #00225a;
+      padding: 0.8rem;
+      text-align: center;
+      width: 100%;
+    }
+
+    .nav .brand {
+      color: white;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .container {
+      flex: 1;
+      width: 95%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #00225a;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #2573fa;
+      padding-bottom: 10px;
+    }
+
+    footer.footer {
+      background-color: #000;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      width: 100%;
+      margin-top: auto;
+    }
+
+    .footer-content {
+      display: inline-block;
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: none;
+    }
+
+    .filter-form {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #eaf1ff;
+      border-radius: 5px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid #2573fa;
+    }
+
+    .filter-form label {
+      margin-right: 5px;
+    }
+
+    select,
+    input[type="text"] {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .btn {
+      background-color: #00225a;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.3s;
+    }
+
+    .btn:hover {
+      background-color: #2573fa;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      border: 1px solid #2573fa;
+      border-radius: 4px;
+      background-color: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border: 1px solid #c5d5ff;
+      text-align: left;
+    }
+
+    th {
+      background-color: #2573fa;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f0f5ff;
+    }
+
+    tr:hover {
+      background-color: #e5eeff;
+    }
+
+    .green {
+      color: green;
+      font-weight: bold;
+    }
+
+    .red {
+      color: red;
+      font-weight: bold;
+    }
+
+    .grey {
+      color: grey;
+      font-style: italic;
+    }
+
+    .action-links {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .action-links a {
+      display: inline-block;
+      padding: 8px 15px;
+      background-color: #00225a;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+
+    .action-links a:hover {
+      background-color: #2573fa;
+    }
+
+    .card-view {
+      display: none;
+    }
+
+    .card {
+      border: 1px solid #2573fa;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background-color: #f8faff;
+      box-shadow: 0 2px 8px rgba(37, 115, 250, 0.15);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #2573fa;
+      background-color: #eaf1ff;
+      margin: -15px -15px 15px -15px;
+      padding: 12px 15px;
+      border-radius: 5px 5px 0 0;
+    }
+
+    .card-id {
+      font-weight: bold;
+      color: #00225a;
+      font-size: 16px;
+    }
+
+    .card-status {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .card-status.complete {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .card-status.incomplete {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .card-row {
+      display: flex;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e1e8ff;
+    }
+
+    .card-label {
+      flex: 0 0 40%;
+      font-weight: bold;
+      color: #00225a;
+    }
+
+    .card-value {
+      flex: 0 0 60%;
+      color: #333;
+    }
+
+    @media screen and (max-width: 1024px) {
+
+      th,
+      td {
+        padding: 8px;
+        font-size: 14px;
       }
-      th, td {
-          padding: 8px;
-          text-align: left;
-          border: 1px solid #ccc;
+    }
+
+    @media screen and (max-width: 768px) {
+      .nav .brand {
+        font-size: 1.8rem;
       }
-      th {
-          background-color: #f2f2f2;
+
+      .filter-form {
+        flex-direction: column;
+        align-items: flex-start;
       }
-      form {
-          margin-bottom: 20px;
+
+      .filter-form label,
+      .filter-form select,
+      .filter-form input[type="text"] {
+        width: 100%;
+        margin-bottom: 5px;
       }
+
+      .filter-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        width: 100%;
+      }
+
+      .filter-buttons .btn {
+        flex: 1;
+        text-align: center;
+      }
+
+      h1 {
+        color: #00225a;
+        font-size: 1.8rem;
+        border-bottom: 2px solid #2573fa;
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+      }
+    }
+
+    @media screen and (max-width: 576px) {
+      .table-container {
+        display: none;
+      }
+
+      .card-view {
+        display: block;
+      }
+
+      .container {
+        width: 100%;
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .footer-content {
+        font-size: 0.9rem;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <h1>Lista de Incidencias</h1>
-  <p>Usuario: <?php echo htmlspecialchars($userRow['usuario']); ?> - Tipo: <?php echo htmlspecialchars($permiso); ?></p>
+  <header>
+    <nav class="nav">
+      <span class="brand">Mapache Security</span>
+    </nav>
+  </header>
 
-  <!-- Formulario de filtrado -->
-  <form method="GET" action="">
-    <label for="filter_field">Filtrar por:</label>
-    <select name="filter_field" id="filter_field">
-      <option value="">-- Seleccione --</option>
-      <option value="idIncidencias" <?php if($filterField=='Incidencias.idIncidencias') echo 'selected'; ?>>ID Incidencia</option>
-      <option value="fecha" <?php if($filterField=='Incidencias.fecha') echo 'selected'; ?>>Fecha</option>
-      <option value="tecnicoAsignado" <?php if($filterField=='Incidencias.tecnicoAsignado') echo 'selected'; ?>>Técnico Asignado</option>
-      <option value="incidencia" <?php if($filterField=='Incidencias.incidencia') echo 'selected'; ?>>Incidencia</option>
-      <option value="usuario" <?php if($filterField=='Usuarios.usuario') echo 'selected'; ?>>Cliente</option>
-      <option value="numEquipo" <?php if($filterField=='Incidencias.numEquipo') echo 'selected'; ?>>Nº Equipo</option>
-      <option value="estado" <?php if($filterField=='Incidencias.estado') echo 'selected'; ?>>Estado (1=Completo, 0=Incompleto)</option>
-    </select>
-    <input type="text" name="filter_value" placeholder="Valor a buscar" value="<?php echo htmlspecialchars($filterValue); ?>">
-    <input type="submit" value="Filtrar">
-    <a href="<?php echo $_SERVER['PHP_SELF']; ?>">Limpiar filtro</a>
-  </form>
+  <div class="container">
+    <h1>Lista de Incidencias</h1>
 
-  <?php if ($stmt->rowCount() > 0): ?>
-    <table>
-      <tr>
-        <th>ID</th>
-        <th>Fecha</th>
-        <th>Estado</th>
-        <th>Técnico Asignado</th>
-        <th>Observaciones</th>
-        <th>Tiempo Desplazamiento</th>
-        <th>Tiempo Intervención</th>
-        <th>Tipo Financiación</th>
-        <th>Cliente</th>
-        <th>Nº Equipo</th>
-        <th>Incidencia</th>
-      </tr>
-      <?php while ($row = $stmt->fetch()): ?>
-        <tr>
-          <td><?php echo htmlspecialchars($row['idIncidencias']); ?></td>
-          <td><?php echo htmlspecialchars($row['fecha']); ?></td>
-          <td><?php echo $row['estado'] ? 'Completo' : 'Incompleto'; ?></td>
-          <td><?php echo htmlspecialchars($row['tecnicoAsignado']); ?></td>
-          <td><?php echo htmlspecialchars($row['observaciones']); ?></td>
-          <td><?php echo htmlspecialchars($row['TDesplazamiento']); ?> min</td>
-          <td><?php echo htmlspecialchars($row['TIntervencion']); ?> min</td>
-          <td><?php echo htmlspecialchars($row['tipoFinanciacion']); ?></td>
-          <td><?php echo htmlspecialchars($row['usuario']); ?></td>
-          <td><?php echo htmlspecialchars($row['numEquipo']); ?></td>
-          <td><?php echo htmlspecialchars($row['incidencia']); ?></td>
-        </tr>
-      <?php endwhile; ?>
-    </table>
-  <?php else: ?>
-    <p>No hay incidencias disponibles.</p>
-  <?php endif; ?>
+    <form method="GET" action="" class="filter-form">
+      <label for="filter_field">Filtrar por:</label>
+      <select name="filter_field" id="filter_field">
+        <option value="">-- Seleccione --</option>
+        <?php foreach ($allowedFields as $key => $col): ?>
+          <option value="<?= $key; ?>" <?= $filterField === $col ? 'selected' : ''; ?>>
+            <?= $key === 'usuario' ? 'Cliente' : ucfirst($key); ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
 
-  <p><a href="../index.php">Volver al inicio</a></p>
+      <input type="text" name="filter_value" placeholder="Valor" value="<?= htmlspecialchars($filterValue); ?>">
+
+      <div class="filter-buttons">
+        <input type="submit" value="Filtrar" class="btn">
+        <a href="<?= $_SERVER['PHP_SELF']; ?>" class="btn btn-secondary">Limpiar</a>
+      </div>
+    </form>
+
+    <?php if ($stmt->rowCount()): ?>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Nombre</th>
+              <th>Número</th>
+              <th>Correo</th>
+              <th>Incidencia</th>
+              <th>Observaciones</th>
+              <th>T. Desplaz.</th>
+              <th>T. Interv.</th>
+              <th>Técnico</th>
+              <th>Estado</th>
+              <th>Nº Equipo</th>
+              <th>CP</th>
+              <th>Localidad</th>
+              <th>Provincia</th>
+              <th>Dirección</th>
+              <th>Firma</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+            $stmt->execute($params);
+            while ($r = $stmt->fetch()):
+              ?>
+              <tr>
+                <td><?= htmlspecialchars($r['idIncidencias']); ?></td>
+                <td><?= htmlspecialchars($r['fecha']); ?></td>
+                <td><?= htmlspecialchars($r['usuario']); ?></td>
+                <td><?= htmlspecialchars($r['nombre']); ?></td>
+                <td><?= htmlspecialchars($r['numero']); ?></td>
+                <td><?= htmlspecialchars($r['correo']); ?></td>
+                <td><?= htmlspecialchars($r['incidencia']); ?></td>
+                <td><?= htmlspecialchars($r['observaciones']); ?></td>
+                <td>
+                  <?php if (!empty($r['TDesplazamiento'])): ?>
+                    <?= htmlspecialchars($r['TDesplazamiento']); ?> min
+                  <?php else: ?><span class="grey">pendiente</span><?php endif; ?>
+                </td>
+                <td>
+                  <?php if (!empty($r['TIntervencion'])): ?>
+                    <?= htmlspecialchars($r['TIntervencion']); ?> min
+                  <?php else: ?><span class="grey">pendiente</span><?php endif; ?>
+                </td>
+                <td><?= htmlspecialchars($r['tecnicoAsignado']); ?></td>
+                <td><?= $r['estado'] ? 'Completo' : 'Incompleto'; ?></td>
+                <td><?= htmlspecialchars($r['numEquipo']); ?></td>
+                <td><?= htmlspecialchars($r['cp']); ?></td>
+                <td><?= htmlspecialchars($r['localidad']); ?></td>
+                <td><?= htmlspecialchars($r['provincia']); ?></td>
+                <td><?= htmlspecialchars($r['direccion']); ?></td>
+                <td>
+                  <?php if (!empty($r['firma'])): ?>
+                    <span class="green">Firmado</span>
+                  <?php else: ?>
+                    <span class="red">Sin firmar</span>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endwhile; ?>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-view">
+        <?php
+        $stmt->execute($params);
+        while ($r = $stmt->fetch()):
+          ?>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-id">ID: <?= htmlspecialchars($r['idIncidencias']); ?></div>
+              <div class="card-status <?= $r['estado'] ? 'complete' : 'incomplete'; ?>">
+                <?= $r['estado'] ? 'Completo' : 'Incompleto'; ?>
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Fecha:</div>
+              <div class="card-value"><?= htmlspecialchars($r['fecha']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Cliente:</div>
+              <div class="card-value"><?= htmlspecialchars($r['usuario']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Nombre:</div>
+              <div class="card-value"><?= htmlspecialchars($r['nombre']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Número:</div>
+              <div class="card-value"><?= htmlspecialchars($r['numero']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Incidencia:</div>
+              <div class="card-value"><?= htmlspecialchars($r['incidencia']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Técnico:</div>
+              <div class="card-value"><?= htmlspecialchars($r['tecnicoAsignado']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">T. Desplaz.:</div>
+              <div class="card-value">
+                <?php if (!empty($r['TDesplazamiento'])): ?>      <?= htmlspecialchars($r['TDesplazamiento']); ?>
+                  min<?php else: ?><span class="grey">pendiente</span><?php endif; ?>
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">T. Interv.:</div>
+              <div class="card-value">
+                <?php if (!empty($r['TIntervencion'])): ?>      <?= htmlspecialchars($r['TIntervencion']); ?>
+                  min<?php else: ?><span class="grey">pendiente</span><?php endif; ?>
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Nº Equipo:</div>
+              <div class="card-value"><?= htmlspecialchars($r['numEquipo']); ?></div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Dirección:</div>
+              <div class="card-value">
+                <?= htmlspecialchars($r['direccion']); ?>, <?= htmlspecialchars($r['localidad']); ?>,
+                <?= htmlspecialchars($r['provincia']); ?> (<?= htmlspecialchars($r['cp']); ?>)
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Firma:</div>
+              <div class="card-value">
+                <?php if (!empty($r['firma'])): ?><span class="green">Firmado</span><?php else: ?><span class="red">Sin
+                    firmar</span><?php endif; ?>
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="card-label">Estado:</div>
+              <div class="card-value">
+                <?php if ($r['estado']): ?><span class="green">Completo</span><?php else: ?><span
+                    class="red">Incompleto</span><?php endif; ?>
+              </div>
+            </div>
+          </div>
+        <?php endwhile; ?>
+      </div>
+    <?php else: ?>
+      <p>No hay incidencias disponibles.</p>
+    <?php endif; ?>
+
+    <div class="action-links">
+      <a href="../home.php">Volver al inicio</a>
+      <a href="crearIncidencias.php">Crear incidencia</a>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <span>&copy; Copyright 2025</span>
+    </div>
+  </footer>
+
+  <script>
+    const sel = document.getElementById('filter_field');
+    const inp = document.querySelector('input[name="filter_value"]');
+    sel.addEventListener('change', () => {
+      if (sel.value === 'firma') {
+        inp.placeholder = 'true o firmado / false o sin firmar';
+      } else {
+        inp.placeholder = 'Valor';
+      }
+    });
+    sel.dispatchEvent(new Event('change'));
+  </script>
 </body>
+
 </html>
