@@ -299,6 +299,340 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
+  <style>
+  * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+       body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: white;
+    min-height: 100vh;
+    color: #333;
+    display: flex;        /* Añade esto */
+    flex-direction: column; /* Añade esto */
+    position: relative;   /* Añade esto */
+}
+        .header-mapache {
+          background: #002255;
+          color: white;
+          padding: 15px 0;
+          text-align: center;
+          position: relative;
+        }
+
+        .header-mapache h1 {
+          font-size: 32px;
+          font-weight: bold;
+          margin: 0;
+        }
+
+        /* Icono de casa en la esquina superior derecha */
+        .home-icon {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+        }
+        .home-icon .fas {
+        color: white;      /* relleno completamente blanco */
+        font-size: 24px;
+        }
+        .home-icon:hover {
+        background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Header - Barra azul con Mapache Security */
+        .header-bar {
+            background: #1e3a8a;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-bar h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        /* Título del formulario */
+        .form-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #333;
+            margin: 30px 0;
+            font-weight: 600;
+        }
+
+        /* Contenedor principal del formulario */
+        .form-container {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 0 20px;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+      }
+
+        /* Formulario con fondo azul claro y caja contenedora */
+        form {
+            background: #e6f3ff;
+            padding: 40px;
+            border: 3px solid #000;
+            border-radius: 0;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-left: 500px; /* Para centrar el formulario */
+        }
+
+        .registro{
+          margin-left: 800px;
+        }
+        /* Grid compacto para los campos principales - TODO EN UNA FILA */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        /* Grid de dirección - SEGUNDA FILA MÁS COMPACTA */
+        .direccion-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        /* Grid para la tercera fila - solo provincia */
+        .provincia-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        /* Grid para localidad y dirección */
+        .localidad-direccion-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        /* Grupo de campo más compacto */
+        .campo-grupo {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        /* Labels más pequeños */
+        label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Inputs más compactos */
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            padding: 8px 12px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: white;
+            outline: none;
+            height: 38px;
+        }
+
+        /* Inputs redondeados para CP, Provincia, Localidad y Dirección */
+        #cp, #provincia, #localidad, #direccion {
+            border-radius: 25px;
+            padding: 8px 16px;
+            border: 2px solid #333;
+            height: 38px;
+        }
+
+        /* Select múltiple más compacto */
+        select[multiple] {
+            min-height: 60px;
+            padding: 6px;
+            height: auto;
+        }
+
+        /* Select normal */
+        select:not([multiple]) {
+            height: 38px;
+        }
+
+
+        /* Botones más centrados y compactos */
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+         .btn-agregar {
+          background: #27ae60;
+          color: white;
+          padding: 12px 30px;
+          border: none;
+          border-radius: 25px;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+          display: block;
+          margin: 30px auto 0;
+        }
+
+        .btn-agregar:hover {
+          background: #219150;
+        }
+        .btn {
+            padding: 12px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* Mensajes de error */
+        .error-message {
+            color: #dc2626;
+            font-size: 0.8rem;
+            margin-top: 3px;
+        }
+
+        /* Campos ocultos */
+        .campo-grupo[style*="display:none"],
+        .campo-grupo[style*="display: none"] {
+            display: none !important;
+        }
+
+        /* Footer negro */
+         .footer {
+              background: rgb(0, 0, 0);
+              color: white;
+              text-align: center;
+              padding: 15px 0;
+              margin-top: auto;  
+              font-size: 14px;
+              position: absolute;  
+              bottom: 0;          
+              width: 100%;        
+          }
+
+        /* Ajustes especiales para campos específicos */
+        .campo-grupo:first-child {
+            margin-bottom: 20px;
+        }
+
+        /* Hacer el formulario más compacto visualmente */
+        .form-container .campo-grupo {
+            margin-bottom: 12px;
+        }
+
+        /* Responsivo mejorado */
+        @media (max-width: 768px) {
+            .form-container {
+                max-width: 100%;
+                padding: 0 15px;
+            }
+
+            form {
+                padding: 25px;
+                max-width: 100%;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .direccion-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .provincia-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .localidad-direccion-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .header-bar h1 {
+                font-size: 2rem;
+            }
+
+            .form-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Ajuste para que el contenido no se vea muy disperso */
+        @media (min-width: 1200px) {
+            .form-container {
+                max-width: 900px;
+            }
+        }
+ 
+  </style>
   <meta charset="UTF-8">
   <title>Registro de Equipos</title>
   <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
@@ -478,7 +812,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </script>
 </head>
 <body onload="inicializar()">
-  <h1>Registrar nuevo equipo</h1>
+  <div class="header-mapache">
+        <h1>Mapache Security</h1>
+       <a href="../home.php" class="home-icon">
+        <i class="fas fa-home"></i>
+        </a>
+    </div>
+
+
+  <h1 class= "registro">Registrar nuevo equipo</h1>
 
   <form method="post" action="" onsubmit="return validarFormulario()">
     <label>Tipo de Equipo:</label><br/>
@@ -629,7 +971,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if (!empty($errors['direccion'])): ?><br/><span style="color:red;"><?= $errors['direccion'] ?></span><?php endif; ?>
     <br/><br/>
 
-    <input type="submit" name="registrar" value="Registrar Equipo">
+    <input type="submit" name="registrar"  class="btn-agregar" value="Registrar Equipo">
+    <br/><br/>
 </form>
+
+  <div class="footer">
+    <p>&copy; 2025 Todos los derechos reservados.</p>
+  </div>
+
+  <script>
+    // Ejecutar la función de inicialización al cargar la página
+    document.addEventListener('DOMContentLoaded', inicializar);
+  </script>
 </body>
 </html>

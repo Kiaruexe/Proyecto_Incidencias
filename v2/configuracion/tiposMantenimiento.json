@@ -15,8 +15,8 @@
         "label": "Garantía",
         "descripcion": "Servicio cubierto por garantía"
     },
-    "ghy": {
+    "trans": {
         "label": "Transferencia",
-        "descripcion": "Servicio por Transferencia"
+        "descripcion": "Servicio de pago por transferencia bancaria"
     }
 }

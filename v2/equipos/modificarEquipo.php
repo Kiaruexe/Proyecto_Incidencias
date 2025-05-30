@@ -162,116 +162,339 @@ if (!isset($_GET['id'])) {
         <meta charset="UTF-8">
         <title>Seleccionar Equipo a Modificar</title>
         <link rel="stylesheet" href="../css/style.css">
+        <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
-            .filters-container {
-                background-color: #f5f5f5;
-                padding: 15px;
-                margin-bottom: 20px;
-                border-radius: 5px;
-                border: 1px solid #ddd;
-            }
-            
-            .filter-row {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 15px;
-                margin-bottom: 15px;
-            }
-            
-            .filter-item {
-                flex: 1;
-                min-width: 200px;
-            }
-            
-            .filter-label {
-                display: block;
-                margin-bottom: 5px;
-                font-weight: bold;
-            }
-            
-            .button-row {
-                display: flex;
-                gap: 10px;
-            }
-            
-            select, input[type="submit"], button {
-                padding: 8px;
-                border-radius: 4px;
-                border: 1px solid #ccc;
-            }
-            
-            .equipment-list {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 20px;
-            }
-            
-            .equipment-list th, .equipment-list td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-            }
-            
-            .equipment-list th {
-                background-color: #f2f2f2;
-            }
-            
-            .equipment-list tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            
-            .equipment-list tr:hover {
-                background-color: #f1f1f1;
-            }
-            
-            .action-button {
-                background-color: #4CAF50;
-                color: white;
-                padding: 5px 10px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                text-decoration: none;
-                display: inline-block;
-                margin-right: 5px;
-            }
-            
-            .action-button:hover {
-                background-color: #45a049;
-            }
-            
-            .delete-button {
-                background-color: #f44336;
-                color: white;
-                padding: 5px 10px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                text-decoration: none;
-                display: inline-block;
-            }
-            
-            .delete-button:hover {
-                background-color: #d32f2f;
-            }
-            
-            .clear-button {
-                background-color: #f44336;
-                color: white;
-            }
-            
-            .clear-button:hover {
-                background-color: #d32f2f;
-            }
-            
-            .apply-button {
-                background-color: #2196F3;
-                color: white;
-            }
-            
-            .apply-button:hover {
-                background-color: #0b7dda;
-            }
+                     :root {
+        --azul-principal: #4A90E2;
+        --azul-oscuro: #002255;
+        --verde: #27ae60;
+        --verde-hover: #219150;
+        --rojo: #e74c3c;
+        --rojo-hover: #c0392b;
+        --naranja: #f9ab25;
+        --naranja-hover: #e0941f;
+        --gris-claro: #f8f9fa;
+        --gris-medio: #e9ecef;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background: var(--gris-claro);
+        color: #333;
+    }
+
+    .header-mapache {
+        background: var(--azul-oscuro);
+        color: var(--azul-oscuro);
+        padding: 15px 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .header-mapache h1 {
+        font-size: 28px;
+        color : white;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .home-icon {
+        position: absolute;
+        right: 30px;
+        color: white;
+        font-size: 24px;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .home-icon:hover {
+        color: var(--azul-principal);
+    }
+
+    .container {
+        flex: 1;
+        width: 95%;
+        max-width: 1400px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    h1 {
+        color: var(--azul-oscuro);
+        margin-bottom: 30px;
+        font-size: 24px;
+        font-weight: 600;
+        padding-bottom: 10px;
+    }
+
+    .filter-section {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e1e8ed;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 20px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        color: var(--azul-oscuro);
+        font-weight: 500;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .filter-group select {
+        padding: 10px 12px;
+        border: 2px solid #e1e8ed;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: border-color 0.3s ease;
+    }
+
+    .filter-group select:focus {
+        outline: none;
+        border-color: var(--azul-principal);
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .btn-primary {
+        background: var(--azul-principal);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: #357abd;
+    }
+
+    .btn-secondary {
+        background: var(--naranja);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: var(--naranja-hover);
+    }
+
+    .tabla-lista {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e1e8ed;
+    }
+
+    .tabla-datos {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .tabla-datos th {
+        background: var(--azul-principal);
+        color: white;
+        padding: 15px 12px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: none;
+    }
+
+    .tabla-datos td {
+        padding: 12px;
+        border-bottom: 1px solid #f1f3f4;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .tabla-datos tr:hover {
+        background: #f8f9ff;
+    }
+
+    .tabla-datos tr:last-child td {
+        border-bottom: none;
+    }
+
+    .acciones {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .btn-modificar {
+        background: var(--verde);
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        transition: background 0.3s ease;
+        display: inline-block;
+    }
+
+    .btn-modificar:hover {
+        background: var(--verde-hover);
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-borrar {
+        background: var(--rojo);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .btn-borrar:hover {
+        background: var(--rojo-hover);
+    }
+
+    .mensaje-info {
+        background: white;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e1e8ed;
+    }
+
+    .mensaje-info p {
+        color: #666;
+        font-size: 16px;
+    }
+
+    .enlaces-navegacion {
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    .enlaces-navegacion a {
+        color: var(--azul-principal);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .enlaces-navegacion a:hover {
+        color: var(--azul-oscuro);
+        text-decoration: underline;
+    }
+
+    footer {
+        background: rgb(0, 0, 0);
+        color: white;
+        text-align: center;
+        padding: 20px;
+        margin-top: 40px;
+        font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .header-mapache {
+            padding: 15px 20px;
+        }
+        
+        .header-mapache h1 {
+            font-size: 24px;
+        }
+        
+        .home-icon {
+            right: 20px;
+            font-size: 20px;
+        }
+        
+        .filter-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .filter-group {
+            min-width: auto;
+        }
+        
+        .filter-buttons {
+            justify-content: center;
+        }
+        
+        .tabla-lista {
+            overflow-x: auto;
+        }
+        
+        .acciones {
+            flex-direction: column;
+            gap: 4px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container {
+            width: 98%;
+            padding: 0 10px;
+        }
+        
+        .tabla-datos th,
+        .tabla-datos td {
+            padding: 8px 6px;
+            font-size: 12px;
+        }
+        
+        .btn-modificar,
+        .btn-borrar {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+    }
         </style>
         <script>
             function confirmarBorrado(numEquipo, tipoEquipo, cliente) {
@@ -280,82 +503,103 @@ if (!isset($_GET['id'])) {
         </script>
     </head>
     <body>
-        <h1>Seleccionar Equipo a Modificar</h1>
-        
-        <div class="filters-container">
-            <form method="get" action="">
-                <div class="filter-row">
-                    <div class="filter-item">
-                        <label class="filter-label" for="filtroCliente">Cliente:</label>
-                        <select name="filtroCliente" id="filtroCliente">
-                            <option value="">-- Todos los clientes --</option>
-                            <?php foreach ($listaClientes as $cliente): ?>
-                                <option value="<?= htmlspecialchars($cliente['idUsuarios']); ?>" 
-                                    <?= ($filtroCliente == $cliente['idUsuarios']) ? 'selected' : ''; ?>>
-                                    <?= htmlspecialchars($cliente['usuario']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label class="filter-label" for="filtroTipoEquipo">Tipo Equipo:</label>
-                        <select name="filtroTipoEquipo" id="filtroTipoEquipo">
-                            <option value="">-- Todos los tipos --</option>
-                            <?php foreach ($tiposEquipo as $codigo => $info): ?>
-                                <option value="<?= htmlspecialchars($codigo); ?>" 
-                                    <?= ($filtroTipoEquipo == $codigo) ? 'selected' : ''; ?>>
-                                    <?= htmlspecialchars($info['label']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="button-row">
-                    <input type="submit" value="Aplicar Filtros" class="apply-button">
-                    <button type="button" onclick="window.location.href='<?= $_SERVER['PHP_SELF']; ?>'" class="clear-button">Limpiar Filtros</button>
-                </div>
-            </form>
+        <div class="header-mapache">
+            <h1>Mapache Security</h1>
+            <a href="../home.php" class="home-icon">
+                <i class="fas fa-home"></i>
+            </a>
         </div>
         
-        <?php if (count($equipos) > 0): ?>
-            <table class="equipment-list">
-                <thead>
-                    <tr>
-                        <th>Número Equipo</th>
-                        <th>Tipo</th>
-                        <th>Cliente</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($equipos as $eq): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($eq['numEquipo']); ?></td>
-                            <td>
-                                <?= htmlspecialchars($tiposEquipo[$eq['tipoEquipo']]['label'] ?? $eq['tipoEquipo']); ?>
-                            </td>
-                            <td><?= htmlspecialchars($eq['nombreCliente']); ?></td>
-                            <td>
-                                <a href="?id=<?= htmlspecialchars($eq['numEquipo']); ?>" class="action-button">Modificar</a>
-                                <form method="post" action="" style="display:inline;" 
-                                      onsubmit="return confirmarBorrado('<?= htmlspecialchars($eq['numEquipo']); ?>', 
-                                                               '<?= htmlspecialchars($tiposEquipo[$eq['tipoEquipo']]['label'] ?? $eq['tipoEquipo']); ?>', 
-                                                               '<?= htmlspecialchars($eq['nombreCliente']); ?>')">
-                                    <input type="hidden" name="numEquipo" value="<?= htmlspecialchars($eq['numEquipo']); ?>">
-                                    <button type="submit" name="borrar" class="delete-button">Borrar</button>
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>No se encontraron equipos con los filtros seleccionados.</p>
-        <?php endif; ?>
+        <div class="container">
+            <h1>Seleccionar Equipo a Modificar</h1>
+            
+            <!-- Sección de filtros -->
+            <div class="filter-section">
+                <form method="get" action="">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="filtroCliente">Cliente:</label>
+                            <select name="filtroCliente" id="filtroCliente">
+                                <option value="">-- Todos los clientes --</option>
+                                <?php foreach ($listaClientes as $cliente): ?>
+                                    <option value="<?= htmlspecialchars($cliente['idUsuarios']); ?>" 
+                                        <?= ($filtroCliente == $cliente['idUsuarios']) ? 'selected' : ''; ?>>
+                                        <?= htmlspecialchars($cliente['usuario']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="filtroTipoEquipo">Tipo Equipo:</label>
+                            <select name="filtroTipoEquipo" id="filtroTipoEquipo">
+                                <option value="">-- Todos los tipos --</option>
+                                <?php foreach ($tiposEquipo as $codigo => $info): ?>
+                                    <option value="<?= htmlspecialchars($codigo); ?>" 
+                                        <?= ($filtroTipoEquipo == $codigo) ? 'selected' : ''; ?>>
+                                        <?= htmlspecialchars($info['label']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-buttons">
+                            <input type="submit" value="Filtrar" class="btn-primary" >
+                            <button type="button" onclick="window.location.href='<?= $_SERVER['PHP_SELF']; ?>'" class="btn-secondary">Limpiar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Tabla de equipos -->
+            <?php if (count($equipos) > 0): ?>
+                <div class="tabla-lista">
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th>NUMERO EQUIPO</th>
+                                <th>TIPO</th>
+                                <th>CLIENTE</th>
+                                <th>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($equipos as $eq): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($eq['numEquipo']); ?></td>
+                                    <td>
+                                        <?= htmlspecialchars($tiposEquipo[$eq['tipoEquipo']]['label'] ?? $eq['tipoEquipo']); ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($eq['nombreCliente']); ?></td>
+                                    <td class="acciones">
+                                        <a href="?id=<?= htmlspecialchars($eq['numEquipo']); ?>" class="btn-modificar">Modificar</a>
+                                        <form method="post" action="" style="display:inline;" 
+                                              onsubmit="return confirmarBorrado('<?= htmlspecialchars($eq['numEquipo']); ?>', 
+                                                                       '<?= htmlspecialchars($tiposEquipo[$eq['tipoEquipo']]['label'] ?? $eq['tipoEquipo']); ?>', 
+                                                                       '<?= htmlspecialchars($eq['nombreCliente']); ?>')">
+                                            <input type="hidden" name="numEquipo" value="<?= htmlspecialchars($eq['numEquipo']); ?>">
+                                            <button type="submit" name="borrar" class="btn-borrar">Borrar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="mensaje-info">
+                    <p>No se encontraron equipos con los filtros seleccionados.</p>
+                </div>
+            <?php endif; ?>
+            
+            <div class="enlaces-navegacion">
+                <p><a href="../home.php">Volver al home</a></p>
+            </div>
+        </div>
         
-        <p><a href="../home.php">Volver al home</a></p>
+        <footer class="footer">
+            <p>&copy; 2025 Todos los derechos reservados.</p>
+        </footer>
     </body>
     </html>
     <?php
@@ -494,54 +738,323 @@ if (isset($_POST['modificar'])) {
     <title>Modificar Equipo</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
     <style>
+ :root {
+            --naranja: #f9ab25;
+            --verde: #27ae60;
+            --verde-hover: #219150;
+            --naranja-hover: #e0981f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header-mapache {
+            background: #002255;
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-mapache h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .home-icon {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .home-icon .fas {
+            color: white;
+            font-size: 24px;
+        }
+
+        .home-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .header-bar {
+            background: #1e3a8a;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-bar h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .form-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #333;
+            margin: 30px 0;
+            font-weight: 600;
+        }
+
+        .form-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        form {
+            background: #e6f3ff;
+            padding: 40px;
+            border: 3px solid #000;
+            border-radius: 0;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                margin-left: 500px; /* Para centrar el formulario */
+        }
+
+        .registro{
+          margin-left: 825px;
+        }
+        .descripcion{
+          margin-left: 500px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        .direccion-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        .provincia-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        .localidad-direccion-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        .campo-grupo {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            padding: 8px 12px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: white;
+            outline: none;
+            height: 38px;
+        }
+
+        #cp, #provincia, #localidad, #direccion {
+            border-radius: 25px;
+            padding: 8px 16px;
+            border: 2px solid #333;
+            height: 38px;
+        }
+
+        select[multiple] {
+            min-height: 60px;
+            padding: 6px;
+            height: auto;
+        }
+
+        select:not([multiple]) {
+            height: 38px;
+        }
+
+        /* Estilos mejorados para los botones */
         .button-container {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
         }
-        .delete-button {
-            background-color: #f44336;
+
+        .btn-modificar {
+            background: var(--verde);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 30px;
             border: none;
-            border-radius: 4px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 150px;
         }
-        .delete-button:hover {
-            background-color: #d32f2f;
+
+        .btn-modificar:hover {
+            background: var(--verde-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
         }
-        .modify-button {
-            background-color: #4CAF50;
+
+        .btn-cancelar {
+            background: var(--naranja);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 30px;
             border: none;
-            border-radius: 4px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 150px;
         }
-        .modify-button:hover {
-            background-color: #45a049;
+
+        .btn-cancelar:hover {
+            background: var(--naranja-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(249, 171, 37, 0.3);
         }
-        .cancel-button {
-            background-color: #ccc;
-            color: black;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .cancel-button:hover {
-            background-color: #bbb;
-        }
-        /* Añadido para destacar campos con errores */
-        .error-input {
-            border: 2px solid #f44336 !important;
-            background-color: #ffe6e6 !important;
-        }
+
         .error-message {
-            color: #f44336;
-            font-size: 0.9em;
-            margin-top: 5px;
+            color: #dc2626;
+            font-size: 0.8rem;
+            margin-top: 3px;
+        }
+
+        .campo-grupo[style*="display:none"],
+        .campo-grupo[style*="display: none"] {
+            display: none !important;
+        }
+
+        .footer {
+            background: rgb(0, 0, 0);
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto;
+            font-size: 14px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .campo-grupo:first-child {
+            margin-bottom: 20px;
+        }
+
+        .form-container .campo-grupo {
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                max-width: 100%;
+                padding: 0 15px;
+            }
+
+            form {
+                padding: 25px;
+                max-width: 100%;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .direccion-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .provincia-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .localidad-direccion-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .header-bar h1 {
+                font-size: 2rem;
+            }
+
+            .form-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .form-container {
+                max-width: 900px;
+            }
         }
     </style>
     <script>
@@ -1003,10 +1516,16 @@ if (isset($_POST['modificar'])) {
     </script>
 </head>
 <body onload="actualizarCampos()">
-    <h1>Modificar Equipo</h1>
+    <div class="header-mapache">
+        <h1>Mapache Security</h1>
+       <a href="../home.php" class="home-icon">
+        <i class="fas fa-home"></i>
+        </a>
+    </div>
+    <h1 class= "registro">Modificar Equipo</h1>
     
-    <p><strong>Número de Equipo:</strong> 001</p>
-    <p><strong>Fecha de Alta:</strong> 12/05/2025</p>
+    <p class= "descripcion"><strong>Número de Equipo:</strong> 001</p>
+    <p class= "descripcion"><strong>Fecha de Alta:</strong> 12/05/2025</p>
     
     <form method="post" action="" onsubmit="return validateForm() && confirm('¿Está seguro que desea modificar este equipo?')">
         <label>Tipo de Equipo:</label><br/>
@@ -1150,8 +1669,12 @@ if (isset($_POST['modificar'])) {
         </select>
         <br/><br/>
 
-        <input type="submit" name="modificar" value="Modificar Equipo">
-        <button type="button" onclick="window.location.href='../home.php'">Cancelar</button>
+        <input type="submit" name="modificar" value="Modificar Equipo" class="btn-modificar">
+        <button type="button" onclick="window.location.href='../home.php'" class="btn-cancelar">Cancelar</button>
     </form>
+    <br/><br/>
+    <div class="footer">
+    <p>&copy; 2025 Todos los derechos reservados.</p>
+  </div>
 </body>
 </html>
