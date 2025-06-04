@@ -37,10 +37,11 @@ try {
 }
 
 $allowedFields = [
-  'idIncidencias' => 'Incidencias.idIncidencias',
+  'numIncidencia' => 'Incidencias.numIncidencia',
   'fecha' => 'Incidencias.fecha',
   'nombre' => 'Incidencias.nombre',
   'numero' => 'Incidencias.numero',
+  'ubicacion' => 'Equipos.ubicacion',
   'correo' => 'Incidencias.correo',
   'incidencia' => 'Incidencias.incidencia',
   'observaciones' => 'Incidencias.observaciones',
@@ -50,10 +51,6 @@ $allowedFields = [
   'usuario' => 'Usuarios.usuario',
   'numEquipo' => 'Incidencias.numEquipo',
   'estado' => 'Incidencias.estado',
-  'cp' => 'Incidencias.cp',
-  'localidad' => 'Incidencias.localidad',
-  'provincia' => 'Incidencias.provincia',
-  'direccion' => 'Incidencias.direccion',
   'firma' => 'Incidencias.firma'
 ];
 
@@ -65,38 +62,54 @@ $filterClause = '';
 $params = [];
 
 if ($filterField && $filterValue !== '') {
-  if ($_GET['filter_field'] === 'firma') {
-    $fv = strtolower($filterValue);
-    if (in_array($fv, ['true', 'firmado'])) {
-      $filterClause = " AND Incidencias.firma IS NOT NULL AND Incidencias.firma <> ''";
-    } elseif (in_array($fv, ['false', 'sin firmar'])) {
-      $filterClause = " AND (Incidencias.firma IS NULL OR Incidencias.firma = '')";
+    if ($_GET['filter_field'] === 'firma') {
+        $fv = strtolower($filterValue);
+        if (in_array($fv, ['true', 'firmado'])) {
+            $filterClause = " AND Incidencias.firma IS NOT NULL AND Incidencias.firma <> ''";
+        } elseif (in_array($fv, ['false', 'sin firmar'])) {
+            $filterClause = " AND (Incidencias.firma IS NULL OR Incidencias.firma = '')";
+        }
+    } elseif ($_GET['filter_field'] === 'estado') {
+        $fv = strtolower($filterValue);
+        if ($fv === 'abierto' || $fv === '0') {
+            $filterClause = " AND Incidencias.estado = ?";
+            $params[] = 0;
+        } elseif ($fv === 'cerrado' || $fv === '1') {
+            $filterClause = " AND Incidencias.estado = ?";
+            $params[] = 1;
+        } else {
+            // Valor inválido: ignorar filtro para evitar errores o devolver vacío
+            $filterClause = '';
+            $params = [];
+        }
+    } else {
+        $filterClause = " AND $filterField = ?";
+        $params[] = $filterValue;
     }
-  } else {
-    $filterClause = " AND $filterField = ?";
-    $params[] = $filterValue;
-  }
 }
-if ($filterField === 'Incidencias.estado' && !in_array($permiso, ['admin', 'jefetecnico'])) {
+
+if ($filterField === 'Incidencias.estado' && !in_array($permiso, ['admin', 'jefetecnico', 'cliente', 'recepcion'])) {
   $filterClause = $filterField = '';
   $params = [];
 }
-
 if (in_array($permiso, ['admin', 'recepcion', 'jefetecnico'])) {
-  $sql = "SELECT Incidencias.*, Usuarios.usuario
+  $sql = "SELECT Incidencias.*, Usuarios.usuario, Equipos.ubicacion
             FROM Incidencias
             LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios
+            LEFT JOIN Equipos ON Incidencias.numEquipo = Equipos.numEquipo
             WHERE 1=1 $filterClause";
 } elseif ($permiso === 'cliente') {
-  $sql = "SELECT Incidencias.*, Usuarios.usuario
+  $sql = "SELECT Incidencias.*, Usuarios.usuario, Equipos.ubicacion
             FROM Incidencias
             LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios
+            LEFT JOIN Equipos ON Incidencias.numEquipo = Equipos.numEquipo
             WHERE Incidencias.idUsuario = ?" . $filterClause;
   array_unshift($params, $_SESSION['idUsuario']);
 } elseif ($permiso === 'tecnico') {
-  $sql = "SELECT Incidencias.*, Usuarios.usuario
+  $sql = "SELECT Incidencias.*, Usuarios.usuario, Equipos.ubicacion
             FROM Incidencias
             LEFT JOIN Usuarios ON Incidencias.idUsuario = Usuarios.idUsuarios
+            LEFT JOIN Equipos ON Incidencias.numEquipo = Equipos.numEquipo
             WHERE Incidencias.estado = 0 AND Incidencias.tecnicoAsignado = ?" . $filterClause;
   array_unshift($params, $userRow['usuario']);
 } else {
@@ -122,6 +135,23 @@ try {
   registrarLog($bd, 'error en verIncidencias', "Error: " . $e->getMessage(), $nombreUsuario);
   exit;
 }
+$allowedFieldsCliente = [
+  'numEquipo' => 'Incidencias.numEquipo',
+  'estado' => 'Incidencias.estado'
+];
+
+if ($permiso === 'cliente') {
+  $allowedFieldsToUse = $allowedFieldsCliente;
+} else {
+  $allowedFieldsToUse = $allowedFields;
+}
+
+$filterField = isset($_GET['filter_field']) && isset($allowedFieldsToUse[$_GET['filter_field']])
+  ? $allowedFieldsToUse[$_GET['filter_field']]
+  : '';
+
+$filterValue = trim($_GET['filter_value'] ?? '');
+
 ?>
 
 <!DOCTYPE html>
@@ -132,6 +162,7 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Incidencias</title>
   <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     * {
       box-sizing: border-box;
@@ -471,8 +502,8 @@ try {
       <label for="filter_field">Filtrar por:</label>
       <select name="filter_field" id="filter_field">
         <option value="">-- Seleccione --</option>
-        <?php foreach ($allowedFields as $key => $col): ?>
-          <option value="<?= $key; ?>" <?= $filterField === $col ? 'selected' : ''; ?>>
+        <?php foreach ($allowedFieldsToUse as $key => $col): ?>
+          <option value="<?= $key; ?>" <?= (isset($_GET['filter_field']) && $_GET['filter_field'] === $key) ? 'selected' : ''; ?>>
             <?= $key === 'usuario' ? 'Cliente' : ucfirst($key); ?>
           </option>
         <?php endforeach; ?>
@@ -491,23 +522,20 @@ try {
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Número Incidencia</th>
               <th>Fecha</th>
               <th>Cliente</th>
               <th>Nombre</th>
               <th>Número</th>
               <th>Correo</th>
+              <th>Ubicación</th>
               <th>Incidencia</th>
               <th>Observaciones</th>
-              <th>T. Desplaz.</th>
-              <th>T. Interv.</th>
+              <th>Tiempo Desplazamiento</th>
+              <th>Tiempo Intervención</th>
               <th>Técnico</th>
               <th>Estado</th>
               <th>Nº Equipo</th>
-              <th>CP</th>
-              <th>Localidad</th>
-              <th>Provincia</th>
-              <th>Dirección</th>
               <th>Firma</th>
             </tr>
           </thead>
@@ -517,12 +545,13 @@ try {
             while ($r = $stmt->fetch()):
               ?>
               <tr>
-                <td><?= htmlspecialchars($r['idIncidencias']); ?></td>
+                <td><?= htmlspecialchars($r['numIncidencia']); ?></td>
                 <td><?= htmlspecialchars($r['fecha']); ?></td>
                 <td><?= htmlspecialchars($r['usuario']); ?></td>
                 <td><?= htmlspecialchars($r['nombre']); ?></td>
                 <td><?= htmlspecialchars($r['numero']); ?></td>
                 <td><?= htmlspecialchars($r['correo']); ?></td>
+                <td><?= htmlspecialchars($r['ubicacion'] ?? 'Sin ubicación'); ?></td>
                 <td><?= htmlspecialchars($r['incidencia']); ?></td>
                 <td><?= htmlspecialchars($r['observaciones']); ?></td>
                 <td>
@@ -536,12 +565,8 @@ try {
                   <?php else: ?><span class="grey">pendiente</span><?php endif; ?>
                 </td>
                 <td><?= htmlspecialchars($r['tecnicoAsignado']); ?></td>
-                <td><?= $r['estado'] ? 'Completo' : 'Incompleto'; ?></td>
+                <td><?= $r['estado'] ? 'Cerrado' : 'Abierto'; ?></td>
                 <td><?= htmlspecialchars($r['numEquipo']); ?></td>
-                <td><?= htmlspecialchars($r['cp']); ?></td>
-                <td><?= htmlspecialchars($r['localidad']); ?></td>
-                <td><?= htmlspecialchars($r['provincia']); ?></td>
-                <td><?= htmlspecialchars($r['direccion']); ?></td>
                 <td>
                   <?php if (!empty($r['firma'])): ?>
                     <span class="green">Firmado</span>
@@ -562,9 +587,9 @@ try {
           ?>
           <div class="card">
             <div class="card-header">
-              <div class="card-id">ID: <?= htmlspecialchars($r['idIncidencias']); ?></div>
-              <div class="card-status <?= $r['estado'] ? 'complete' : 'incomplete'; ?>">
-                <?= $r['estado'] ? 'Completo' : 'Incompleto'; ?>
+              <div class="card-id">ID: <?= htmlspecialchars($r['numIncidencia']); ?></div>
+              <div class="card-status <?= $r['estado'] ? 'cerrado' : 'abierto'; ?>">
+                <?= $r['estado'] ? 'Cerrado' : 'Abierto'; ?>
               </div>
             </div>
             <div class="card-row">
@@ -584,6 +609,10 @@ try {
               <div class="card-value"><?= htmlspecialchars($r['numero']); ?></div>
             </div>
             <div class="card-row">
+              <div class="card-label">Ubicación:</div>
+              <div class="card-value"><?= htmlspecialchars($r['ubicacion'] ?? 'Sin ubicación'); ?></div>
+            </div>
+            <div class="card-row">
               <div class="card-label">Incidencia:</div>
               <div class="card-value"><?= htmlspecialchars($r['incidencia']); ?></div>
             </div>
@@ -594,14 +623,14 @@ try {
             <div class="card-row">
               <div class="card-label">T. Desplaz.:</div>
               <div class="card-value">
-                <?php if (!empty($r['TDesplazamiento'])): ?>      <?= htmlspecialchars($r['TDesplazamiento']); ?>
+                <?php if (!empty($r['TDesplazamiento'])): ?>       <?= htmlspecialchars($r['TDesplazamiento']); ?>
                   min<?php else: ?><span class="grey">pendiente</span><?php endif; ?>
               </div>
             </div>
             <div class="card-row">
               <div class="card-label">T. Interv.:</div>
               <div class="card-value">
-                <?php if (!empty($r['TIntervencion'])): ?>      <?= htmlspecialchars($r['TIntervencion']); ?>
+                <?php if (!empty($r['TIntervencion'])): ?>       <?= htmlspecialchars($r['TIntervencion']); ?>
                   min<?php else: ?><span class="grey">pendiente</span><?php endif; ?>
               </div>
             </div>
@@ -609,13 +638,7 @@ try {
               <div class="card-label">Nº Equipo:</div>
               <div class="card-value"><?= htmlspecialchars($r['numEquipo']); ?></div>
             </div>
-            <div class="card-row">
-              <div class="card-label">Dirección:</div>
-              <div class="card-value">
-                <?= htmlspecialchars($r['direccion']); ?>, <?= htmlspecialchars($r['localidad']); ?>,
-                <?= htmlspecialchars($r['provincia']); ?> (<?= htmlspecialchars($r['cp']); ?>)
-              </div>
-            </div>
+
             <div class="card-row">
               <div class="card-label">Firma:</div>
               <div class="card-value">
@@ -640,6 +663,9 @@ try {
     <div class="action-links">
       <a href="../home.php">Volver al inicio</a>
       <a href="crearIncidencias.php">Crear incidencia</a>
+       <a href="pdf_incidencias.php?filter_field=<?= urlencode($_GET['filter_field'] ?? '') ?>&filter_value=<?= urlencode($_GET['filter_value'] ?? '') ?>" target="_blank" class="btn">
+    <i class="bi bi-file-earmark-pdf-fill" style="margin-right: 6px;"></i>Descargar PDF
+  </a>
     </div>
   </div>
 

@@ -240,7 +240,7 @@ function obtenerValor($campo, $actual)
     ? trim($_POST[$campo]) : $actual;
 }
 
-if (isset($_POST['modificar'])) {
+if (isset($_POST['modificar']) || isset($_POST['finalizar'])) {
   $estado = intval($_POST['estado'] ?? $incidenciaData['estado']);
   $tecnicoAsignado = obtenerValor('tecnico', $incidenciaData['tecnicoAsignado']);
   $observaciones = obtenerValor('observaciones', $incidenciaData['observaciones']);
@@ -254,9 +254,33 @@ if (isset($_POST['modificar'])) {
   $idUsuario = intval(obtenerValor('idUsuario', $incidenciaData['idUsuario']));
   $numEquipo = obtenerValor('numEquipo', $incidenciaData['numEquipo']);
   $correo = obtenerValor('correo', $incidenciaData['correo']);
-  $firma = obtenerValor('firma', $incidenciaData['firma'] ?? '');
+  $firmaFormulario = isset($_POST['firma']) ? trim($_POST['firma']) : '';
+  $firmaBD = $incidenciaData['firma'] ?? '';
   $nombre = obtenerValor('nombre', $incidenciaData['nombre'] ?? '');
   $numero = obtenerValor('numero', $incidenciaData['numero'] ?? '');
+
+  // Validaciones según estado y firma
+  if ($estado == 0) {
+    if ($firmaFormulario !== '' && $firmaFormulario !== $firmaBD) {
+      echo "<script>alert('No se puede firmar una incidencia abierta.'); history.back();</script>";
+      exit;
+    }
+  }
+
+  if ($estado == 1) {
+    if ($firmaBD !== '' && $firmaFormulario === '') {
+      echo "<script>alert('No se puede borrar la firma de una incidencia cerrada.'); history.back();</script>";
+      exit;
+    }
+  }
+
+  // Validación para "finalizar"
+  if (isset($_POST['finalizar'])) {
+    if ($estado != 1 || $firmaFormulario === '') {
+      echo "<script>alert('Para finalizar la incidencia debe estar cerrada y firmada.'); history.back();</script>";
+      exit;
+    }
+  }
 
   try {
     $sqlUpdate = "UPDATE Incidencias SET
@@ -292,12 +316,17 @@ if (isset($_POST['modificar'])) {
       $idUsuario,
       $numEquipo,
       $correo,
-      $firma,
+      $firmaFormulario,
       $nombre,
       $numero,
       $idIncidencia
     ]);
-    echo "<script>alert('Incidencia modificada con éxito.'); window.location.href='../home.php';</script>";
+
+    if (isset($_POST['finalizar'])) {
+      echo "<script>alert('Incidencia finalizada correctamente.'); window.location.href='../home.php';</script>";
+    } else {
+      echo "<script>alert('Incidencia modificada con éxito.'); window.location.href='../home.php';</script>";
+    }
     exit;
   } catch (PDOException $e) {
     echo "<script>alert('Error al modificar la incidencia: " . $e->getMessage() . "');</script>";
@@ -310,9 +339,9 @@ if (isset($_POST['modificar'])) {
 <head>
   <meta charset="UTF-8" />
   <title>Modificar Incidencia</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png" />
   <style>
-    /* Reset y base */
     *,
     *::before,
     *::after {
@@ -333,8 +362,8 @@ if (isset($_POST['modificar'])) {
     }
 
     header {
-      background-color: #00225a;
-      color: white;
+      background: #00225a;
+      color: #fff;
       padding: 20px 30px;
       font-size: 32px;
       font-weight: bold;
@@ -568,7 +597,7 @@ if (isset($_POST['modificar'])) {
 
       <div class="form-group">
         <label>Cliente:</label>
-        <select name="idUsuario">
+        <select name="idUsuario" id="idUsuarioSelect">
           <?php
           $clientes = $bd->query("SELECT idUsuarios, usuario FROM Usuarios WHERE permiso='cliente'");
           foreach ($clientes as $cli) {
@@ -664,7 +693,7 @@ if (isset($_POST['modificar'])) {
 
       <div class="form-group">
         <label>Estado:</label>
-        <select name="estado">
+        <select name="estado" id="estadoSelect">
           <option value="0" <?= $incidenciaData['estado'] == 0 ? 'selected' : '' ?>>Abierta</option>
           <option value="1" <?= $incidenciaData['estado'] == 1 ? 'selected' : '' ?>>Cerrada</option>
         </select>
@@ -702,8 +731,15 @@ if (isset($_POST['modificar'])) {
       </div>
 
       <div class="btn-group" style="margin-top: 20px;">
-        <input type="submit" name="modificar" value="Finalizar Incidencia" />
+        <input type="submit" name="modificar" value="Guardar Incidencia" />
+        <button type="button" id="finalizarBtn">Finalizar Incidencia</button>
         <a href="../home.php" class="btn-home">Volver al home</a>
+      </div>
+      <div style="text-align:center; margin-top: 15px;">
+        <a href="pdf_incidencia.php?id=<?= urlencode($incidenciaData['idIncidencias']) ?>" target="_blank"
+          style="display: inline-block; padding: 12px 24px; background-color: #d73838; color: white; text-decoration: none; font-weight: bold; border-radius: 6px;">
+          <i class="bi bi-file-earmark-pdf-fill"></i> Generar PDF
+        </a>
       </div>
     </form>
   </main>
@@ -713,6 +749,7 @@ if (isset($_POST['modificar'])) {
   </footer>
 
   <script>
+    // Actualiza datos del equipo
     function actualizarEquipo(sel) {
       const o = sel.options[sel.selectedIndex];
       document.getElementById('cp').value = o.getAttribute('data-cp') || '';
@@ -732,6 +769,7 @@ if (isset($_POST['modificar'])) {
       <?php endif; ?>
     });
 
+    // Variables firma
     const canvas = document.getElementById('firma-canvas');
     const ctx = canvas.getContext('2d');
     let drawing = false,
@@ -773,14 +811,77 @@ if (isset($_POST['modificar'])) {
       end();
     });
 
-    document.getElementById('limpiar-firma').addEventListener('click', () => {
+    // Botón limpiar firma
+    const limpiarFirmaBtn = document.getElementById('limpiar-firma');
+    limpiarFirmaBtn.addEventListener('click', () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       signed = false;
+      document.getElementById('firma').value = '';
+      actualizarFirmaState();
     });
 
+    // Guardar firma en hidden al enviar formulario
     document.getElementById('modificarIncidenciaForm').addEventListener('submit', () => {
       if (signed) document.getElementById('firma').value = canvas.toDataURL();
       else document.getElementById('firma').value = '';
+    });
+
+    // Control estado y firma para habilitar/deshabilitar elementos
+    const estadoSelect = document.getElementById('estadoSelect');
+    const finalizarBtn = document.getElementById('finalizarBtn');
+
+    function actualizarFirmaState() {
+      const estado = estadoSelect.value;
+      if (estado === '0') { // Abierta
+        canvas.style.pointerEvents = 'none'; // No se puede firmar
+        limpiarFirmaBtn.disabled = false; // Sí se puede limpiar
+        limpiarFirmaBtn.style.opacity = '1';
+        finalizarBtn.disabled = true; // No se puede finalizar
+        finalizarBtn.style.opacity = '0.5';
+      } else { // Cerrada
+        canvas.style.pointerEvents = 'auto'; // Se puede firmar
+        limpiarFirmaBtn.disabled = true; // No se puede limpiar
+        limpiarFirmaBtn.style.opacity = '0.5';
+
+        // Comprobar si hay firma guardada o firmada para activar el botón finalizar
+        const firmaHidden = document.getElementById('firma').value;
+        const hayFirma = firmaHidden !== '' || signed;
+        finalizarBtn.disabled = !hayFirma;
+        finalizarBtn.style.opacity = hayFirma ? '1' : '0.5';
+      }
+    }
+
+    estadoSelect.addEventListener('change', actualizarFirmaState);
+    window.addEventListener('load', actualizarFirmaState);
+
+    // Botón Finalizar Incidencia
+    finalizarBtn.addEventListener('click', () => {
+      const estado = estadoSelect.value;
+      const firmaHidden = document.getElementById('firma').value;
+
+      if (estado !== '1' || firmaHidden === '') {
+        alert('Para finalizar la incidencia debe estar cerrada y firmada.');
+        return;
+      }
+      // Añadir input hidden para finalizar y enviar
+      const form = document.getElementById('modificarIncidenciaForm');
+      let inputFinalizar = document.querySelector('input[name="finalizar"]');
+      if (!inputFinalizar) {
+        inputFinalizar = document.createElement('input');
+        inputFinalizar.type = 'hidden';
+        inputFinalizar.name = 'finalizar';
+        inputFinalizar.value = '1';
+        form.appendChild(inputFinalizar);
+      }
+      form.submit();
+    });
+
+    // Detectar dibujo para activar botón finalizar
+    canvas.addEventListener('mouseup', () => {
+      if (signed) {
+        document.getElementById('firma').value = canvas.toDataURL();
+        actualizarFirmaState();
+      }
     });
   </script>
 </body>

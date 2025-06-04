@@ -245,291 +245,426 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
 <head>
     <meta charset="UTF-8">
     <title>Registro de Usuarios</title>
-    <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <style>
-        * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+  /* Reset y configuración base */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
 
-  body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: white;
-        min-height: 100vh;
-        color: #333;
-        display: flex;
-        flex-direction: column;
-    }
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #333;
+}
 
-    /* Header principal */
-    .header-mapache {
-      background: #002255;
-      color: white;
-      padding: 15px 0;
-      text-align: center;
-      position: relative;
-      flex-shrink: 0;
-    }
+/* Header principal */
+.header-mapache {
+    background: #002255;
+    color: white;
+    padding: 15px 0;
+    text-align: center;
+    position: relative;
+    flex-shrink: 0;
+}
 
-    .header-mapache h1 {
-      font-size: 32px;
-      font-weight: bold;
-      margin: 0;
-    }
+.header-mapache h1 {
+    font-size: 32px;
+    font-weight: bold;
+    margin: 0;
+}
 
-    /* Usuario actual en el header */
-    .user-info {
-        position: absolute;
-        top: 15px;
-        left: 20px;
-        color: white;
-        font-size: 14px;
-    }
+/* Información de usuario en el header */
+.user-info {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    font-size: 14px;
+    color: #ccc;
+}
 
-    /* Icono de casa en la esquina superior derecha */
-    .home-icon {
-        position: absolute;
-        top: 15px;
-        right: 20px;
-        text-decoration: none;
-        transition: background-color 0.3s ease;
-        padding: 5px;
-        border-radius: 4px;
-    }
-    .home-icon .fas {
-        color: white;
-        font-size: 24px;
-    }
-    .home-icon:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
+/* Icono de casa en la esquina superior derecha */
+.home-icon {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    padding: 5px;
+    border-radius: 4px;
+    color: white;
+    font-size: 24px;
+}
 
-    /* Contenedor principal que crece para empujar el footer */
+.home-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Contenido principal - Reducido margen y aumentado ancho máximo */
+.main-content {
+    flex: 1 0 auto;
+    max-width: 1000px; /* Aumentado de 800px a 1000px */
+    margin: 25px auto 40px; /* Reducido margen superior e inferior */
+    padding: 0 15px; /* Reducido padding lateral */
+}
+
+/* Título del formulario */
+.form-title {
+    text-align: center;
+    font-size: 2.4rem;
+    margin-bottom: 20px; /* Reducido de 30px a 20px */
+    color: #00225a;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    user-select: none;
+}
+
+/* Contenedor del formulario - Más ancho */
+.form-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 35px 45px; /* Aumentado padding horizontal para más espacio interno */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    margin-bottom: 20px; /* Reducido de 30px a 20px */
+    width: 100%; /* Asegurar que ocupe todo el ancho disponible */
+}
+
+/* Estilos del formulario */
+form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+label {
+    font-weight: 700;
+    color: #00225a;
+    margin-bottom: 8px;
+    user-select: none;
+    font-size: 1.1rem;
+    display: block;
+}
+
+/* Campos de entrada */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+    font-size: 1rem;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 2px solid #2573fa;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background-color: #f9fbff;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
+    min-height: 45px;
+    width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #f9ab25;
+    box-shadow: 0 0 6px #f9ab25;
+    background-color: #fff;
+}
+
+/* Select específico */
+select {
+    cursor: pointer;
+}
+
+select option:disabled {
+    color: #6c757d;
+    background-color: #f8f9fa;
+}
+
+/* Contenedor de direcciones */
+#direcciones-container {
+    grid-column: 1 / -1; /* Ocupa toda la fila */
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 25px;
+    margin: 20px 0;
+    background-color: #fafbfc;
+    display: none; /* Oculto por defecto */
+}
+
+#direcciones-container h3 {
+    color: #00225a;
+    font-size: 1.3rem;
+    margin: 25px 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #2573fa;
+    font-weight: 700;
+    grid-column: 1 / -1; /* Los títulos ocupan toda la fila */
+}
+
+#direcciones-container h3:first-child {
+    margin-top: 0;
+}
+
+/* Grid interno para las direcciones */
+#direcciones-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+#direcciones-container.hidden {
+    display: none;
+}
+
+/* Campos fiscales obligatorios */
+.fiscal-field {
+    border-color: #2573fa !important;
+}
+
+/* Grupos de campos específicos que ocupan toda la fila */
+.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Contenedor de direcciones específicamente cuando está visible */
+#direcciones-container:not(.hidden) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+/* Labels y campos dentro del contenedor de direcciones */
+#direcciones-container label {
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+#direcciones-container label:first-of-type {
+    margin-top: 0;
+}
+
+.fiscal-field:focus {
+    border-color: #f9ab25 !important;
+    box-shadow: 0 0 6px #f9ab25 !important;
+}
+
+/* Botones */
+.btn-modificar {
+    grid-column: 1 / -1; /* Ocupa toda la fila */
+    margin-top: 25px; /* Reducido de 30px a 25px */
+    text-align: center;
+}
+
+/* Campo oculto */
+input[type="hidden"] {
+    grid-column: 1 / -1;
+    display: none;
+}
+
+.btn-modificar input[type="submit"] {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 14px 30px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.btn-modificar input[type="submit"]:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+.btn-modificar input[type="submit"]:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Enlace volver al home */
+.volver-home {
+    text-align: center;
+    margin: 15px 0; /* Reducido de 20px a 15px */
+}
+
+.volver-home a {
+    color: #00225a;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+}
+
+.volver-home a:hover {
+    color: #f9ab25;
+    text-decoration: underline;
+}
+
+/* Footer */
+.footer {
+    background-color: #000;
+    color: #fff;
+    padding: 16px 10px;
+    font-size: 0.9rem;
+    text-align: center;
+    user-select: none;
+    flex-shrink: 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+    position: relative;
+    z-index: 100;
+}
+
+/* Campos deshabilitados */
+input[type="text"]:disabled,
+input[type="email"]:disabled,
+input[type="password"]:disabled,
+input[type="number"]:disabled,
+select:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    color: #6c757d;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-container {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
     .main-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-bottom: 20px;
+        max-width: 90%; /* En pantallas medianas, usar 90% del ancho */
+        margin: 20px auto 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin: 20px 10px 40px; /* Reducido margen en móvil */
+        padding: 0 8px; /* Reducido padding lateral */
+        max-width: 100%;
     }
 
-    /* Título del formulario */
-    .form-title {
-        text-align: center;
-        font-size: 2rem;
-        color: #333;
-        margin: 30px 0;
-        font-weight: 600;
-        margin-right: 300px;
-    }
-
-    /* Contenedor principal del formulario */
     .form-container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      flex: 1;
-      margin: 0 auto;
-      margin-right: 500px;
-  }
+        padding: 25px 20px; /* Mantenido padding interno */
+    }
 
-  .volver-home {
+    .form-title {
+        font-size: 2rem;
+        margin-bottom: 15px; /* Reducido margen */
+    }
+
+    .user-info {
+        position: static;
         text-align: center;
-        margin-top: 10px;
-        margin-right: 300px;
-    }
-
-    .btn-modificar {
-      text-align: center;
-        margin-top: 15px;
-        margin-left: 300px;
-    }
-
-    /* Formulario con fondo azul claro y caja contenedora */
-    form {
-        background: #e6f3ff;
-        padding: 40px;
-        border: 3px solid #000;
-        border-radius: 0;
-        width: 100%;
-        max-width: 900px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-
-    /* Grid compacto para los campos principales */
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 25px;
-        align-items: end;
-    }
-
-    /* Grupo de campo más compacto */
-    .campo-grupo {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 15px;
-    }
-
-    /* Labels más pequeños */
-    label {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 5px;
-        font-size: 0.9rem;
-    }
-
-    /* Inputs más compactos */
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="number"],
-    input[type="date"],
-    select,
-    textarea {
-        padding: 8px 12px;
-        border: 2px solid #333;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        font-family: inherit;
-        background: white;
-        outline: none;
-        height: 38px;
         margin-bottom: 10px;
     }
 
-    /* Inputs redondeados para campos específicos */
-    input[name*="cp"], 
-    input[name*="provincia"], 
-    input[name*="localidad"], 
-    input[name*="direccion"] {
-        border-radius: 25px;
-        padding: 8px 16px;
+    .home-icon {
+        right: 15px;
+        font-size: 20px;
     }
 
-    /* Select normal */
-    select:not([multiple]) {
-        height: 38px;
+    #direcciones-container {
+        padding: 20px 15px;
+        grid-template-columns: 1fr; /* Una sola columna en móvil */
     }
 
-    /* Opciones deshabilitadas */
-    option:disabled {
-        color: #999;
-        background-color: #f5f5f5;
+    .btn-modificar input[type="submit"] {
+        width: 100%;
+        min-width: auto;
     }
 
-    /* Botones */
-    .button-container {
-        display: flex;
-        justify-content: center;
-        gap: 40px;
-        margin-top: 30px;
+    /* Formulario en una sola columna en móvil */
+    form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-mapache h1 {
+        font-size: 24px;
     }
 
-    .btn,
-    input[type="submit"],
-    button {
-        background: #2563eb;
-        color: white;
-        padding: 12px 30px;
-        border: none;
-        border-radius: 25px;
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
+    .form-title {
+        font-size: 1.8rem;
     }
 
-    .btn:hover,
-    input[type="submit"]:hover,
-    button:hover {
-        background: #1d4ed8;
+    .form-container {
+        padding: 20px 15px;
+        margin-bottom: 15px;
     }
 
-    /* Secciones de direcciones */
-    #direcciones-container h3 {
-        color: #333;
-        margin: 20px 0 10px 0;
-        font-size: 1.2rem;
-        border-bottom: 2px solid #333;
-        padding-bottom: 5px;
+    .main-content {
+        margin: 15px 8px 30px; /* Márgenes más pequeños en móviles pequeños */
     }
+}
 
-    /* Enlaces */
-    a {
-        color: #2563eb;
-        text-decoration: none;
-        margin: 20px 0;
-        display: inline-block;
-    }
+/* Estilos adicionales para mejor UX */
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+}
 
-    a:hover {
-        text-decoration: underline;
-    }
+/* Hover effects para mejor interactividad */
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+select:hover {
+    border-color: #1a5fdd;
+}
 
-    /* Footer fijo en la parte inferior */
-    .footer {
-        background: rgb(0, 0, 0);
-        color: white;
-        text-align: center;
-        padding: 15px 0;
-        font-size: 14px;
-        flex-shrink: 0;
-        margin-top: auto;
-    }
+/* Loading state para botón */
+.btn-modificar input[type="submit"]:disabled {
+    position: relative;
+}
 
-    /* Responsivo mejorado */
-    @media (max-width: 768px) {
-        .form-container {
-            max-width: 100%;
-            padding: 0 15px;
-        }
+.btn-modificar input[type="submit"]:disabled::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-left: 8px;
+}
 
-        form {
-            padding: 25px;
-            max-width: 100%;
-        }
-        
-        .form-grid {
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .button-container {
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .header-mapache h1 {
-            font-size: 24px;
-        }
-
-        .form-title {
-            font-size: 1.5rem;
-        }
-
-        .user-info {
-            position: static;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-    }
-
-    /* Ajuste para pantallas grandes */
-    @media (min-width: 1200px) {
-        .form-container {
-            max-width: 900px;
-        }
-    }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
       </style>
     <script>
       // Permisos permitidos para el usuario actual (desde PHP)
@@ -628,10 +763,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
 <body>
     <!-- Header principal -->
     <div class="header-mapache">
-        <div class="user-info">
-            Usuario: <?php echo htmlspecialchars($usuarioLogueado ?? 'Desconocido'); ?> 
-            (<?php echo ucfirst($permisoUsuarioActual); ?>)
-        </div>
         <h1>Mapache Security</h1>
         <a href="../home.php" class="home-icon">
             <i class="fas fa-home"></i>
