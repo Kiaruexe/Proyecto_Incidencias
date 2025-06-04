@@ -55,7 +55,7 @@ function leerTiposMantenimiento() {
     }
     
     // Si ninguno existe, devolver los tipos por defecto
-    error_log("Usando tipos de pago por defecto");
+    error_log("Usando tipos de servicio por defecto");
     return [
         'mantenimientoCompleto' => [
             'label' => 'Completo',
@@ -103,7 +103,7 @@ $tiposMantenimiento = leerTiposMantenimiento();
 if (!is_array($tiposMantenimiento)) {
     error_log('$tiposMantenimiento no es un array. Usando array vacío.');
     $tiposMantenimiento = [];
-    $error = 'Error al cargar los tipos de pago. Se ha inicializado con un conjunto vacío.';
+    $error = 'Error al cargar los tipos de servicio. Se ha inicializado con un conjunto vacío.';
 }
 
 // Procesar formulario de agregar nuevo tipo
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (preg_match('/[^a-z0-9_]/', $valor)) {
             $error = 'El valor solo puede contener letras minúsculas, números y guiones bajos.';
         } elseif (isset($tiposMantenimiento[$valor])) {
-            $error = 'Ya existe un tipo de pago con ese valor.';
+            $error = 'Ya existe un tipo de servicio con ese valor.';
         } else {
             // Agregar nuevo tipo
             $tiposMantenimiento[$valor] = [
@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Guardar en archivo
             guardarTiposMantenimiento($tiposMantenimiento);
             
-            $mensaje = 'Tipo de pago agregado correctamente.';
+            $mensaje = 'Tipo de Servicio agregado correctamente.';
         }
     } elseif (isset($_POST['eliminar_tipo'])) {
         $valorEliminar = $_POST['eliminar_tipo'];
@@ -138,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // No permitir eliminar tipos básicos
         $tiposBasicos = ['mantenimientoCompleto', 'mantenimientoManoObra', 'mantenimientoFacturable', 'mantenimientoGarantia'];
         if (in_array($valorEliminar, $tiposBasicos)) {
-            $error = 'No se pueden eliminar los tipos básicos de pago.';
+            $error = 'No se pueden eliminar los tipos básicos de servicio.';
         } else {
             // Eliminar tipo
             unset($tiposMantenimiento[$valorEliminar]);
@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Guardar en archivo
             guardarTiposMantenimiento($tiposMantenimiento);
             
-            $mensaje = 'Tipo de pago eliminado correctamente.';
+            $mensaje = 'Tipo de servicio eliminado correctamente.';
         }
     } elseif (isset($_POST['editar_tipo'])) {
         $valorEditar = $_POST['tipo_editar'];
@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Guardar en archivo
             guardarTiposMantenimiento($tiposMantenimiento);
             
-            $mensaje = 'Tipo de Pago actualizado correctamente.';
+            $mensaje = 'Tipo de Servicio actualizado correctamente.';
         }
     }
 }
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Tipos de Pago - Mapache Security</title>
+    <title>Gestión de Tipos de Servicio - Mapache Security</title>
     <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
     <style>
@@ -285,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           background: #219150;
         }
 
-        /* Tabla de tipos de pago */
+        /* Tabla de tipos de servicio */
         .tabla-container {
           background: white;
           border-radius: 8px;
@@ -351,7 +351,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-color: #c82333;
         }
 
-        /* Sección Agregar Nuevo Tipo de Pago - Estilo similar a la tabla */
+        /* Sección Agregar Nuevo Tipo de Servicio - Estilo similar a la tabla */
         .agregar-section {
           background: #f7faff;
           border-radius: 15px;
@@ -446,7 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           margin-top: 5px;
         }
 
-        /* Botón Agregar Tipo de Pago */
+        /* Botón Agregar Tipo de SERVICIO */
         .btn-agregar {
           background: #27ae60;
           color: white;
@@ -549,7 +549,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             document.getElementById('tipo_editar').value = valor;
             document.getElementById('nueva_etiqueta').value = etiqueta;
             document.getElementById('nueva_descripcion').value = descripcion;
-            document.getElementById('titulo-edicion').textContent = 'Editar tipo de Pago: ' + etiqueta;
+            document.getElementById('titulo-edicion').textContent = 'Editar tipo de Servicio: ' + etiqueta;
             
             // Scroll al formulario
             document.getElementById('formulario-edicion').scrollIntoView();
@@ -567,7 +567,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Contenido principal -->
     <div class="main-container">
-        <h1 class="page-title">Gestión de Tipos de Pago</h1>
+        <h1 class="page-title">Gestión de Tipos de Servicio</h1>
         
         <!-- Botones -->
         <div class="button-container">
@@ -591,7 +591,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="tabla-container">
             <?php if (empty($tiposMantenimiento)): ?>
                 <div class="empty-state">
-                    <p>No hay tipos de Pago definidos. Por favor, agregue uno a continuación.</p>
+                    <p>No hay tipos de Servicios definidos. Por favor, agregue uno a continuación.</p>
                 </div>
             <?php else: ?>
                 <table  border= 1 class="tabla-tipos">
@@ -613,7 +613,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <button class="action-btn edit-btn" onclick="mostrarFormularioEdicion('<?= htmlspecialchars(addslashes($valor)) ?>', '<?= htmlspecialchars(addslashes($datos['label'])) ?>', '<?= htmlspecialchars(addslashes($datos['descripcion'] ?? '')) ?>')">Editar</button>
                                     
                                     <?php if (!in_array($valor, ['mantenimientoCompleto', 'mantenimientoManoObra', 'mantenimientoFacturable', 'mantenimientoGarantia'])): ?>
-                                        <form method="post" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este tipo de Pago?');">
+                                        <form method="post" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este tipo de Servicio?');">
                                             <button type="submit" name="eliminar_tipo" value="<?= htmlspecialchars($valor) ?>" class="action-btn delete-btn">Eliminar</button>
                                         </form>
                                     <?php endif; ?>
@@ -627,7 +627,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Formulario Agregar -->
         <div class="agregar-section">
-            <h2>Agregar Nuevo Tipo de Pago</h2>
+            <h2>Agregar Nuevo Tipo de Servicio</h2>
             
             <form method="post" action="" id="agregar-form" onsubmit="return validarFormulario()">
                 <div class="form-row">
@@ -646,17 +646,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group-full">
                     <label for="descripcion">Descripción:</label>
-                    <textarea id="descripcion" name="descripcion" placeholder="Descripción detallada del tipo de pago"></textarea>
-                    <div class="help-text">Descripción detallada del tipo de Pago.</div>
+                    <textarea id="descripcion" name="descripcion" placeholder="Descripción detallada del tipo de servicio"></textarea>
+                    <div class="help-text">Descripción detallada del tipo de Servicio.</div>
                 </div>
                 
-                <button type="submit" name="agregar_tipo" class="btn-agregar">AGREGAR TIPO DE PAGO</button>
+                <button type="submit" name="agregar_tipo" class="btn-agregar">AGREGAR TIPO DE SERVICIO</button>
             </form>
         </div>
 
         <!-- Formulario de Edición -->
         <div id="formulario-edicion" class="edit-form">
-            <h3 id="titulo-edicion">Editar tipo de Pago</h3>
+            <h3 id="titulo-edicion">Editar tipo de Servicio</h3>
             
             <form method="post" action="" id="editar-form" onsubmit="return validarFormularioEdicion()">
                 <input type="hidden" id="tipo_editar" name="tipo_editar" value="">

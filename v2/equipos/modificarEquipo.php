@@ -1,10 +1,95 @@
 <?php 
 session_start();
 
-if (!isset($_SESSION['idUsuario'])) {
-    header("Location: ../login.php");
+// Verificar si el usuario está logueado
+$usuarioLogueado = false;
+$permisoUsuario = null;
+
+// CORREGIDO: Primero verificar idUsuario (que es lo que establece el login)
+if (isset($_SESSION['idUsuario'])) {
+    // Si tenemos idUsuario, necesitamos obtener los datos del usuario de la BD
+    try {
+        $bd = new PDO(
+            'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa;charset=utf8', 
+            'Mapapli', 
+            '9R%d5cf62',
+            [ 
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]
+        );
+        
+        $sql = "SELECT usuario, correo, permiso FROM Usuarios WHERE idUsuarios = ?";
+        $stmt = $bd->prepare($sql);
+        $stmt->execute([$_SESSION['idUsuario']]);
+        $datosUsuario = $stmt->fetch();
+        
+        if ($datosUsuario) {
+            $usuarioLogueado = $datosUsuario['usuario'] ?? $datosUsuario['correo'];
+            $permisoUsuario = $datosUsuario['permiso'];
+            
+            // Opcionalmente, establecer estas variables en la sesión para futuros usos
+            $_SESSION['usuario'] = $datosUsuario['usuario'];
+            $_SESSION['correo'] = $datosUsuario['correo'];
+            $_SESSION['permiso'] = $datosUsuario['permiso'];
+        }
+        
+    } catch (PDOException $e) {
+        error_log("Error al obtener datos del usuario: " . $e->getMessage());
+    }
+} else {
+    // Fallback: buscar otras posibles variables de sesión
+    if (isset($_SESSION['usuario'])) {
+        $usuarioLogueado = $_SESSION['usuario'];
+    } elseif (isset($_SESSION['correo'])) {
+        $usuarioLogueado = $_SESSION['correo'];
+    } elseif (isset($_SESSION['email'])) {
+        $usuarioLogueado = $_SESSION['email'];
+    } elseif (isset($_SESSION['user'])) {
+        $usuarioLogueado = $_SESSION['user'];
+    }
+
+    // Buscar permiso
+    if (isset($_SESSION['permiso'])) {
+        $permisoUsuario = $_SESSION['permiso'];
+    } elseif (isset($_SESSION['tipo'])) {
+        $permisoUsuario = $_SESSION['tipo'];
+    } elseif (isset($_SESSION['rol'])) {
+        $permisoUsuario = $_SESSION['rol'];
+    } elseif (isset($_SESSION['nivel'])) {
+        $permisoUsuario = $_SESSION['nivel'];
+    }
+}
+
+// Si no hay usuario logueado, redirigir al login
+if (!$usuarioLogueado) {
+    echo "<script>
+            alert('⚠️ Acceso denegado. Debe iniciar sesión.');
+            window.location.href = '../login.php';
+          </script>";
     exit;
 }
+
+// Si no hay permiso definido, redirigir al login
+if (!$permisoUsuario) {
+    echo "<script>
+            alert('⚠️ Acceso denegado. Permiso no encontrado en sesión.');
+            window.location.href = '../login.php';
+          </script>";
+    exit;
+}
+
+// Verificar que solo admin y técnico puedan acceder a funciones de modificación
+if (!in_array($permisoUsuario, ['admin', 'tecnico'])) {
+    echo "<script>
+            alert('⚠️ Acceso denegado. No tiene permisos para realizar esta acción.');
+            window.location.href = '../home.php';
+          </script>";
+    exit;
+}
+
+// Obtener el permiso del usuario actual
+$permisoUsuarioActual = $permisoUsuario;
 
 // Función para leer tipos de equipo desde archivos de configuración
 function leerTiposEquipo() {
@@ -87,16 +172,17 @@ function leerTiposMantenimiento() {
 $tiposEquipo = leerTiposEquipo();
 $tiposMantenimiento = leerTiposMantenimiento();
 
-try {
-    $bd = new PDO(
-        'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
-} catch (PDOException $e) {
-    echo "<script>alert('Error de conexión: " . addslashes($e->getMessage()) . "');</script>";
-    exit;
-}
-
-// Manejar solicitud de borrado
+// Manejar solicitud de borrado (solo admin y técnico)
 if (isset($_POST['borrar']) && isset($_POST['numEquipo'])) {
+    // Verificación adicional de permisos para operaciones críticas
+    if (!in_array($permisoUsuarioActual, ['admin', 'tecnico'])) {
+        echo "<script>
+                alert('⚠️ No tiene permisos para borrar equipos.');
+                window.history.back();
+              </script>";
+        exit;
+    }
+    
     $numEquipoBorrar = $_POST['numEquipo'];
     try {
         $sqlBorrar = "DELETE FROM Equipos WHERE numEquipo = ?";
@@ -602,16 +688,106 @@ if (!isset($_GET['id'])) {
         </footer>
     </body>
     </html>
-    <?php
+
+    
+<?php
+exit;
+}
+// Iniciar sesión si no está iniciada
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Variables iniciales
+$usuarioLogueado = null;
+$permisoUsuario = null;
+
+// Verificar si existe idUsuario en la sesión
+if (isset($_SESSION['idUsuario'])) {
+    try {
+        // Usar tus credenciales de conexión directamente
+        $bd = new PDO(
+            'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa;charset=utf8', 
+            'Mapapli', 
+            '9R%d5cf62',
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]
+        );
+        
+        $sql = "SELECT usuario, correo, permiso FROM Usuarios WHERE idUsuarios = ?";
+        $stmt = $bd->prepare($sql);
+        $stmt->execute([$_SESSION['idUsuario']]);
+        $datosUsuario = $stmt->fetch();
+        
+        if ($datosUsuario) {
+            $usuarioLogueado = $datosUsuario['usuario'] ?? $datosUsuario['correo'];
+            $permisoUsuario = $datosUsuario['permiso'];
+            
+            // Establecer variables en la sesión para futuros usos
+            $_SESSION['usuario'] = $datosUsuario['usuario'];
+            $_SESSION['correo'] = $datosUsuario['correo'];
+            $_SESSION['permiso'] = $datosUsuario['permiso'];
+        }
+    } catch (PDOException $e) {
+        error_log("Error al obtener datos del usuario: " . $e->getMessage());
+    }
+} else {
+    // Fallback: buscar otras posibles variables de sesión
+    if (isset($_SESSION['usuario'])) {
+        $usuarioLogueado = $_SESSION['usuario'];
+    } elseif (isset($_SESSION['correo'])) {
+        $usuarioLogueado = $_SESSION['correo'];
+    } elseif (isset($_SESSION['email'])) {
+        $usuarioLogueado = $_SESSION['email'];
+    } elseif (isset($_SESSION['user'])) {
+        $usuarioLogueado = $_SESSION['user'];
+    }
+    
+    // Buscar permiso
+    if (isset($_SESSION['permiso'])) {
+        $permisoUsuario = $_SESSION['permiso'];
+    } elseif (isset($_SESSION['tipo'])) {
+        $permisoUsuario = $_SESSION['tipo'];
+    } elseif (isset($_SESSION['rol'])) {
+        $permisoUsuario = $_SESSION['rol'];
+    } elseif (isset($_SESSION['nivel'])) {
+        $permisoUsuario = $_SESSION['nivel'];
+    }
+}
+
+// Si no hay usuario logueado, redirigir al login
+if (!$usuarioLogueado) {
+    echo "<script>alert('⚠️ Debe iniciar sesión para acceder a esta página.'); window.location.href='../login.php';</script>";
+    exit;
+}
+
+// Si no hay permiso definido, redirigir al login
+if (!$permisoUsuario) {
+    echo "<script>alert('⚠️ No tiene permisos para realizar esta acción. Contacte al administrador.'); window.location.href='../login.php';</script>";
+    exit;
+}
+// Solo admin y tecnico pueden modificar equipos
+if (!in_array($permisoUsuario, ['admin', 'tecnico'])) {
+    echo "<script>alert('⚠️ Acceso denegado. No tiene permisos para realizar esta acción.'); window.location.href='../home.php';</script>";
+    exit;
+}
+
+// Verificar si se pasó el ID del equipo
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    echo "<script>alert('ID de equipo no válido.'); window.location.href='../home.php';</script>";
     exit;
 }
 
 $numEquipoModificar = $_GET['id'];
+
 try {
     $sql = "SELECT * FROM Equipos WHERE numEquipo = ?";
     $stmt = $bd->prepare($sql);
     $stmt->execute([$numEquipoModificar]);
     $equipoData = $stmt->fetch();
+    
     if (!$equipoData) {
         echo "<script>alert('Equipo no encontrado.'); window.location.href='../home.php';</script>";
         exit;
@@ -621,6 +797,7 @@ try {
     exit;
 }
 
+// Obtener lista de usuarios clientes
 try {
     $sqlUsuarios = "SELECT idUsuarios, usuario,
                            cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
@@ -636,6 +813,7 @@ try {
     $listaUsuarios = [];
 }
 
+// Funciones auxiliares
 function limpiarCampo($valor) {
     return !empty($valor) ? $valor : null;
 }
@@ -647,9 +825,8 @@ function obtenerValor($campo, $actual) {
 $errores = [];
 $exito = false;
 
+// Procesar formulario de modificación
 if (isset($_POST['modificar'])) {
-    // Errores se manejarán con JavaScript alerts en lugar de errores PHP
-    
     $tipoEquipoArray = $_POST['tipoEquipo'] ?? [];
     $tipoEquipo = count($tipoEquipoArray) > 0 ? $tipoEquipoArray[0] : $equipoData['tipoEquipo'];
     
@@ -676,55 +853,23 @@ if (isset($_POST['modificar'])) {
 
     try {
         $sqlUpdate = "UPDATE Equipos SET 
-            tipoEquipo = ?,
-            marca = ?,
-            modelo = ?,
-            procesador = ?,
-            memoria = ?,
-            disco = ?,
-            tipo = ?,
-            placa = ?,
-            serie = ?,
-            ubicacion = ?,
-            costo = ?,
-            sistema = ?,
-            pantalla = ?,
-            observaciones = ?,
-            tipoMantenimiento = ?,
-            cp = ?,
-            provincia = ?,
-            localidad = ?,
-            direccion = ?,
-            idUsuario = ?,
-            fechaCompra = ?
+            tipoEquipo = ?, marca = ?, modelo = ?, procesador = ?, memoria = ?, disco = ?, 
+            tipo = ?, placa = ?, serie = ?, ubicacion = ?, costo = ?, sistema = ?, 
+            pantalla = ?, observaciones = ?, tipoMantenimiento = ?, cp = ?, provincia = ?, 
+            localidad = ?, direccion = ?, idUsuario = ?, fechaCompra = ?
             WHERE numEquipo = ?";
+        
         $stmtUpdate = $bd->prepare($sqlUpdate);
         $stmtUpdate->execute([
-            $tipoEquipo,
-            $marca,
-            $modelo,
-            $procesador,
-            $memoria,
-            $disco,
-            $tipo,
-            $placa,
-            $serie,
-            $ubicacion,
-            $costo,
-            $sistema,
-            $pantalla,
-            $observaciones,
-            $tipoMantenimiento,
-            $cp,
-            $provincia,
-            $localidad,
-            $direccion,
-            $idUsuario,
-            $fechaCompra,
-            $numEquipoModificar
+            $tipoEquipo, $marca, $modelo, $procesador, $memoria, $disco, 
+            $tipo, $placa, $serie, $ubicacion, $costo, $sistema, 
+            $pantalla, $observaciones, $tipoMantenimiento, $cp, $provincia, 
+            $localidad, $direccion, $idUsuario, $fechaCompra, $numEquipoModificar
         ]);
+        
         echo "<script>alert('✅ Equipo modificado correctamente.'); window.location.href='../home.php';</script>";
         exit;
+        
     } catch (PDOException $e) {
         echo "<script>alert('⚠️ Error al modificar equipo: " . addslashes($e->getMessage()) . "');</script>";
     }
@@ -740,7 +885,7 @@ if (isset($_POST['modificar'])) {
     <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
     <style>
- :root {
+         :root {
             --naranja: #f9ab25;
             --verde: #27ae60;
             --verde-hover: #219150;
@@ -1057,7 +1202,7 @@ if (isset($_POST['modificar'])) {
             }
         }
     </style>
-    <script>
+<script>
        function autocompletarDireccion() {
             const selectUser = document.getElementById('idUsuario');
             const selectedOption = selectUser.options[selectUser.selectedIndex];
@@ -1143,13 +1288,24 @@ if (isset($_POST['modificar'])) {
 
         // Validación mejorada para entradas de moneda/costo
         function validarCosto(input) {
-            if (input.value !== "" && (isNaN(parseFloat(input.value)) || parseFloat(input.value) < 0)) {
+            // Convertir coma a punto para validación
+            let valor = input.value.replace(',', '.');
+            if (input.value !== "" && (isNaN(parseFloat(valor)) || parseFloat(valor) < 0)) {
                 alert("El costo debe ser un número válido mayor o igual a cero");
                 input.classList.add('error-input');
                 return false;
             }
             input.classList.remove('error-input');
             return true;
+        }
+
+        // Función para normalizar el valor del costo antes del envío
+        function normalizarCosto() {
+            const costoInput = document.getElementsByName('costo')[0];
+            if (costoInput && costoInput.value) {
+                // Convertir coma a punto para la base de datos
+                costoInput.value = costoInput.value.replace(',', '.');
+            }
         }
 
         // Validar longitud mínima de texto
@@ -1345,7 +1501,6 @@ if (isset($_POST['modificar'])) {
             return true;
         }
 
-
          // Función para validar garantía
         function validarGarantia() {
             const tipoMantenimiento = document.getElementsByName('tipoMantenimiento')[0];
@@ -1425,16 +1580,16 @@ if (isset($_POST['modificar'])) {
             if (tipoDireccion.value) {
                 autocompletarDireccion();
             }
-            
             // Configurar validación del formulario
             const form = document.querySelector('form');
             if (form) {
                 // Usar onsubmit en lugar de addEventListener para mantener compatibilidad
                 form.onsubmit = function(event) {
+                    // Normalizar el costo antes de validar y enviar
+                    normalizarCosto();
                     return validateForm() && confirm("¿Está seguro que desea modificar este equipo?");
                 };
             }
-            
             // Agregar validación en tiempo real para todos los campos importantes
             // Validar CP
             const cpInput = document.getElementById('cp');
@@ -1443,7 +1598,6 @@ if (isset($_POST['modificar'])) {
                     validarCP(this);
                 });
             }
-            
             // Validar costo
             const costoInput = document.getElementsByName('costo')[0];
             if (costoInput) {
@@ -1488,7 +1642,6 @@ if (isset($_POST['modificar'])) {
                     });
                 }
             });
-            
             // Validar multiselect
             const tipoEquipo = document.getElementsByName('tipoEquipo[]')[0];
             if (tipoEquipo) {
@@ -1498,9 +1651,6 @@ if (isset($_POST['modificar'])) {
                     actualizarCampos();
                 });
             }
-
-
-
             // Añadir validación de garantía en tiempo real
             const tipoMantenimiento = document.getElementsByName('tipoMantenimiento')[0];
             // Validar fecha de compra cuando cambie
@@ -1540,76 +1690,76 @@ if (isset($_POST['modificar'])) {
         </select>
         <br/><br/>
 
-        <!-- Nuevo campo Fecha de Compra -->
+        <!-- Campo Fecha de Compra con valor de la BD -->
         <label>Fecha de Compra:</label><br/>
-        <input type="date" id="fechaCompra" name="fechaCompra" value=""><br/><br/>
+        <input type="date" id="fechaCompra" name="fechaCompra" value="<?= htmlspecialchars($equipoData['fechaCompra'] ?? '') ?>"><br/><br/>
 
         <div id="grupo-marca" style="display:none;">
             <label>Marca:</label><br/>
-            <input type="text" name="marca" value=""><br/><br/>
+            <input type="text" name="marca" value="<?= htmlspecialchars($equipoData['marca'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-modelo" style="display:none;">
             <label>Modelo:</label><br/>
-            <input type="text" name="modelo" value=""><br/><br/>
+            <input type="text" name="modelo" value="<?= htmlspecialchars($equipoData['modelo'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-serie" style="display:none;">
             <label>Serie:</label><br/>
-            <input type="text" name="serie" value=""><br/><br/>
+            <input type="text" name="serie" value="<?= htmlspecialchars($equipoData['serie'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-placa" style="display:none;">
             <label>Placa:</label><br/>
-            <input type="text" name="placa" value=""><br/><br/>
+            <input type="text" name="placa" value="<?= htmlspecialchars($equipoData['placa'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-procesador" style="display:none;">
             <label>Procesador:</label><br/>
-            <input type="text" name="procesador" value=""><br/><br/>
+            <input type="text" name="procesador" value="<?= htmlspecialchars($equipoData['procesador'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-memoria" style="display:none;">
             <label>Memoria:</label><br/>
-            <input type="text" name="memoria" value=""><br/><br/>
+            <input type="text" name="memoria" value="<?= htmlspecialchars($equipoData['memoria'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-disco" style="display:none;">
             <label>Disco:</label><br/>
-            <input type="text" name="disco" value=""><br/><br/>
+            <input type="text" name="disco" value="<?= htmlspecialchars($equipoData['disco'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-pantalla" style="display:none;">
             <label>Pantalla:</label><br/>
-            <input type="text" name="pantalla" value=""><br/><br/>
+            <input type="text" name="pantalla" value="<?= htmlspecialchars($equipoData['pantalla'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-observaciones" style="display:none;">
             <label>Observaciones:</label><br/>
-            <textarea name="observaciones"></textarea><br/><br/>
+            <textarea name="observaciones"><?= htmlspecialchars($equipoData['observaciones'] ?? '') ?></textarea><br/><br/>
         </div>
 
         <div id="grupo-costo" style="display:none;">
             <label>Costo:</label><br/>
-            <input type="number" step="0.01" name="costo" value=""><br/><br/>
+            <input type="text" step="0.01" name="costo" value="<?= htmlspecialchars($equipoData['costo'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-sistema" style="display:none;">
             <label>Sistema:</label><br/>
-            <input type="text" name="sistema" value=""><br/><br/>
+            <input type="text" name="sistema" value="<?= htmlspecialchars($equipoData['sistema'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-ubicacion" style="display:none;">
             <label>Ubicación:</label><br/>
-            <input type="text" name="ubicacion" value=""><br/><br/>
+            <input type="text" name="ubicacion" value="<?= htmlspecialchars($equipoData['ubicacion'] ?? '') ?>"><br/><br/>
         </div>
 
         <div id="grupo-tipo" style="display:none;">
             <label>Tipo (Especifique):</label><br/>
-            <input type="text" name="tipo" value=""><br/><br/>
+            <input type="text" name="tipo" value="<?= htmlspecialchars($equipoData['tipo'] ?? '') ?>"><br/><br/>
         </div>
 
-        <label>Tipo de Pago:</label><br/>
+        <label>Tipo de Servicio:</label><br/>
         <select name="tipoMantenimiento" required>
             <option value="">-- Seleccione --</option>
             <?php foreach ($tiposMantenimiento as $val => $info): ?>
@@ -1622,18 +1772,18 @@ if (isset($_POST['modificar'])) {
         <br/><br/>
 
         <label>Código Postal:</label><br/>
-        <input type="text" id="cp" name="cp" value="" required minlength="5">
+        <input type="text" id="cp" name="cp" value="<?= htmlspecialchars($equipoData['cp'] ?? '') ?>" required minlength="5">
         <div id="cp-error" class="error-message" style="display: none;"></div>
         <br/><br/>
 
         <label>Provincia:</label><br/>
-        <input type="text" id="provincia" name="provincia" value="" required><br/><br/>
+        <input type="text" id="provincia" name="provincia" value="<?= htmlspecialchars($equipoData['provincia'] ?? '') ?>" required><br/><br/>
 
         <label>Localidad:</label><br/>
-        <input type="text" id="localidad" name="localidad" value="" required><br/><br/>
+        <input type="text" id="localidad" name="localidad" value="<?= htmlspecialchars($equipoData['localidad'] ?? '') ?>" required><br/><br/>
 
         <label>Dirección:</label><br/>
-        <input type="text" id="direccion" name="direccion" value="" required><br/><br/>
+        <input type="text" id="direccion" name="direccion" value="<?= htmlspecialchars($equipoData['direccion'] ?? '') ?>" required><br/><br/>
 
         <label>Seleccione el Cliente:</label><br/>
         <select id="idUsuario" name="idUsuario" onchange="autocompletarDireccion()" required>
@@ -1663,13 +1813,13 @@ if (isset($_POST['modificar'])) {
 
         <label>Tipo de dirección:</label><br/>
         <select id="tipoDireccion" onchange="autocompletarDireccion()">
-            <option value="fiscal">Fiscal</option>
-            <option value="1">Dirección 1</option>
-            <option value="2">Dirección 2</option>
+            <option value="fiscal" <?= ($equipoData['tipoDireccion'] ?? 'fiscal') === 'fiscal' ? 'selected' : '' ?>>Fiscal</option>
+            <option value="1" <?= ($equipoData['tipoDireccion'] ?? '') === '1' ? 'selected' : '' ?>>Dirección 1</option>
+            <option value="2" <?= ($equipoData['tipoDireccion'] ?? '') === '2' ? 'selected' : '' ?>>Dirección 2</option>
         </select>
         <br/><br/>
 
-        <input type="submit" name="modificar" value="Modificar Equipo" class="btn-modificar">
+        <input type="submit" name="modificar" value="Modificar Equipo" class="btn-modificar" onclick="normalizarCosto()">
         <button type="button" onclick="window.location.href='../home.php'" class="btn-cancelar">Cancelar</button>
     </form>
     <br/><br/>

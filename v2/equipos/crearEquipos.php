@@ -1,5 +1,57 @@
+
 <?php
 session_start();
+
+// Verificar que el usuario esté logueado
+if (!isset($_SESSION['idUsuario'])) {
+    echo "<script>
+            alert('⚠️ Acceso denegado. Debe iniciar sesión.');
+            window.location.href = '../login.php';
+          </script>";
+    exit();
+}
+
+// Obtener el permiso del usuario desde la base de datos
+try {
+    $bd = new PDO(
+        'mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 
+        'Mapapli', 
+        '9R%d5cf62',
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    
+    $sql = "SELECT permiso FROM Usuarios WHERE idUsuarios = ?";
+    $stmt = $bd->prepare($sql);
+    $stmt->execute([$_SESSION['idUsuario']]);
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$usuario) {
+        echo "<script>
+                alert('⚠️ Usuario no encontrado.');
+                window.location.href = '../login.php';
+              </script>";
+        exit();
+    }
+    
+    $permisoUsuario = $usuario['permiso'];
+    
+} catch (PDOException $e) {
+    echo "<script>
+            alert('⚠️ Error al verificar permisos.');
+            window.location.href = '../login.php';
+          </script>";
+    exit();
+}
+
+// Verificar que solo admin, recepcion o jefeTecnico puedan acceder
+if (!in_array($permisoUsuario, ['admin', 'recepcion', 'jefeTecnico'])) {
+    echo "<script>
+            alert('⚠️ No tiene permisos para acceder a esta función.');
+            window.location.href = '../home.php';
+          </script>";
+    exit();
+}
+
 // Mostrar todos los errores (en desarrollo)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -8,10 +60,11 @@ error_reporting(E_ALL);
 // Variables para mensajes
 $mensaje = '';
 $tipoMensaje = '';
-$redirigir = false; // Nueva variable para controlar redirección
+$redirigir = false;
 
+// El resto del código continúa igual...
 try {
-    $bd = new PDO('mysql:host=PMYSQL168.dns-servicio.com;dbname=9981336_aplimapa;charset=utf8', 'Mapapli', '9R%d5cf62');
+    // Reutilizar la conexión ya establecida
     $sqlUsuarios = "SELECT idUsuarios, usuario,
                            cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
                            cp1, provincia1, localidad1, direccion1,
@@ -25,6 +78,7 @@ try {
     $mensaje = "Error al conectar con la base de datos de usuarios: " . htmlspecialchars($e->getMessage());
     $tipoMensaje = 'error';
 }
+
 
 function leerTiposEquipo() {
   // Función sin cambios
@@ -169,6 +223,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['fechaCompra'] = 'Fecha de compra requerida.';
     }
     
+    // Validar que el usuario seleccionado sea un cliente válido
+    if (!empty($data['idUsuario'])) {
+        try {
+            $stmtValidarUsuario = $bd->prepare("SELECT permiso FROM Usuarios WHERE idUsuarios = ?");
+            $stmtValidarUsuario->execute([$data['idUsuario']]);
+            $usuarioValidacion = $stmtValidarUsuario->fetch();
+            
+            if (!$usuarioValidacion || $usuarioValidacion['permiso'] !== 'cliente') {
+                $errors['idUsuario'] = 'El usuario seleccionado no es un cliente válido.';
+            }
+        } catch (PDOException $e) {
+            $errors['idUsuario'] = 'Error al validar el usuario.';
+        }
+    }
+    
     // Validación de garantía en servidor
     if (empty($errors) && $data['tipoMantenimiento'] === 'mantenimientoGarantia') {
         $fc = new DateTime($data['fechaCompra']);
@@ -301,8 +370,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
+  <meta charset="UTF-8">
+  <title>Registro de Equipos</title>
+  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+  <link rel="stylesheet" href="../css/style.css">
   <style>
-  * {
+     * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -631,13 +704,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 max-width: 900px;
             }
         }
- 
   </style>
-  <meta charset="UTF-8">
-  <title>Registro de Equipos</title>
-  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
-  <link rel="stylesheet" href="../css/style.css">
-  <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
   <script>
     // Función para mostrar alertas
     function mostrarAlerta(mensaje, tipo, redirigir = false) {
@@ -670,7 +737,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       
       const tipoPago = document.getElementById('tipoMantenimiento');
       const fechaCompra = document.getElementById('fechaCompra');
-      // Al iniciar, deshabilitar select de tipo de pago
+      // Al iniciar, deshabilitar select de tipo de servicio
       tipoPago.disabled = true;
 
       // Función para actualizar estado del select y la opción garantía
@@ -819,7 +886,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </a>
     </div>
 
-
   <h1 class= "registro">Registrar nuevo equipo</h1>
 
   <form method="post" action="" onsubmit="return validarFormulario()">
@@ -897,7 +963,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
     <br/><br/>
 
-    <label>Tipo de Pago:</label><br/>
+    <label>Tipo de Servicio:</label><br/>
     <select id="tipoMantenimiento" name="tipoMantenimiento" required>
         <option value="">-- Seleccione --</option>
         <?php foreach ($tiposMantenimiento as $val => $info): ?>
