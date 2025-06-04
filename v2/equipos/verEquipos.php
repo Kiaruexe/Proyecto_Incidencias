@@ -61,6 +61,8 @@ try {
     '9R%d5cf62'
   );
   $bd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $bd->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+  $bd->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
 
   $u = $bd->prepare("SELECT permiso, usuario FROM Usuarios WHERE idUsuarios = ?");
   $u->execute([$_SESSION['idUsuario']]);
@@ -70,10 +72,20 @@ try {
 
   $fTipo = $_GET['tipoEquipo'] ?? 'todos';
   $fMaint = $_GET['tipoMantenimiento'] ?? '';
-  $fCP = $_GET['cp'] ?? '';
-  $fProv = $_GET['provincia'] ?? '';
-  $fLocal = $_GET['localidad'] ?? '';
-  $fUser = $_GET['usuario'] ?? '';
+  
+  // Filtros específicos según el tipo de usuario
+  if ($permiso === 'cliente') {
+    // Para clientes: solo filtro de ubicación
+    $fUbicacion = $_GET['ubicacion'] ?? '';
+  } else {
+    // Para otros usuarios: filtros de ubicación separados + ubicación general
+    $fCP = $_GET['cp'] ?? '';
+    $fProv = $_GET['provincia'] ?? '';
+    $fLocal = $_GET['localidad'] ?? '';
+    $fUbicacion = $_GET['ubicacion'] ?? '';
+    $fUser = $_GET['usuario'] ?? '';
+  }
+  
   $orderBy = $_GET['ordenarPor'] ?? 'numEquipo';
   $orderDir = (($_GET['orden'] ?? 'ASC') === 'DESC') ? 'DESC' : 'ASC';
   $validCols = ['numEquipo', 'fechaAlta', 'fechaCompra', 'usuario', 'costo'];
@@ -82,7 +94,7 @@ try {
 
   $orderBySql = ($orderBy === 'usuario') ? 'u.usuario' : "e.$orderBy";
 
-  $sql = "SELECT e.*, u.usuario
+  $sql = "SELECT e.*, u.usuario, e.costo + 0.0 as costo_decimal
           FROM Equipos e
           LEFT JOIN Usuarios u ON e.idUsuario = u.idUsuarios
           WHERE 1=1";
@@ -101,16 +113,33 @@ try {
     $params[] = $fMaint;
   }
 
-  foreach (['cp' => $fCP, 'provincia' => $fProv, 'localidad' => $fLocal] as $col => $val) {
-    if ($val !== '') {
-      $sql .= " AND e.$col LIKE ?";
-      $params[] = "%$val%";
+  // Filtros de ubicación según el tipo de usuario
+  if ($permiso === 'cliente') {
+    // Para clientes: buscar en ubicación o en la concatenación de cp, provincia, localidad
+    if ($fUbicacion !== '') {
+      $sql .= " AND (e.ubicacion LIKE ? OR CONCAT_WS(', ', NULLIF(e.cp, ''), NULLIF(e.provincia, ''), NULLIF(e.localidad, '')) LIKE ?)";
+      $params[] = "%$fUbicacion%";
+      $params[] = "%$fUbicacion%";
     }
-  }
+  } else {
+    // Para otros usuarios: filtros separados + ubicación general
+    foreach (['cp' => $fCP, 'provincia' => $fProv, 'localidad' => $fLocal] as $col => $val) {
+      if ($val !== '') {
+        $sql .= " AND e.$col LIKE ?";
+        $params[] = "%$val%";
+      }
+    }
 
-  if ($fUser !== '') {
-    $sql .= " AND u.usuario LIKE ?";
-    $params[] = "%$fUser%";
+    if ($fUbicacion !== '') {
+      $sql .= " AND (e.ubicacion LIKE ? OR CONCAT_WS(', ', NULLIF(e.cp, ''), NULLIF(e.provincia, ''), NULLIF(e.localidad, '')) LIKE ?)";
+      $params[] = "%$fUbicacion%";
+      $params[] = "%$fUbicacion%";
+    }
+
+    if ($fUser !== '') {
+      $sql .= " AND u.usuario LIKE ?";
+      $params[] = "%$fUser%";
+    }
   }
 
   $sql .= " ORDER BY $orderBySql $orderDir";
@@ -127,6 +156,16 @@ function fmtMantenimiento($k)
 {
   global $tiposMantenimiento;
   return $tiposMantenimiento[$k]['label'] ?? $k;
+}
+
+function formatUbicacion($cp, $provincia, $localidad, $ubicacion = '') {
+  // Si hay ubicación específica, mostrarla
+  if (!empty($ubicacion)) {
+    return $ubicacion;
+  }
+  // Si no, mostrar la concatenación de cp, provincia, localidad
+  $ubicacionTradicional = array_filter([$cp, $provincia, $localidad]);
+  return implode(', ', $ubicacionTradicional) ?: '-';
 }
 ?>
 
@@ -384,14 +423,27 @@ function fmtMantenimiento($k)
         <?php endforeach; ?>
       </select>
 
-      <label>CP:</label><input type="text" name="cp" value="<?= htmlspecialchars($fCP) ?>">
-      <label>Provincia:</label><input type="text" name="provincia" value="<?= htmlspecialchars($fProv) ?>">
-      <label>Localidad:</label><input type="text" name="localidad" value="<?= htmlspecialchars($fLocal) ?>">
-      <label>Cliente:</label><input type="text" name="usuario" value="<?= htmlspecialchars($fUser) ?>">
+      <?php if ($permiso === 'cliente'): ?>
+        <!-- Para clientes: solo campo de ubicación -->
+        <label>Ubicación:</label><input type="text" name="ubicacion" value="<?= htmlspecialchars($fUbicacion) ?>" placeholder="Buscar por ubicación">
+      <?php else: ?>
+        <!-- Para otros usuarios: campos separados + ubicación -->
+        <label>CP:</label><input type="text" name="cp" value="<?= htmlspecialchars($fCP) ?>">
+        <label>Provincia:</label><input type="text" name="provincia" value="<?= htmlspecialchars($fProv) ?>">
+        <label>Localidad:</label><input type="text" name="localidad" value="<?= htmlspecialchars($fLocal) ?>">
+        <label>Ubicación:</label><input type="text" name="ubicacion" value="<?= htmlspecialchars($fUbicacion) ?>" placeholder="Buscar por ubicación">
+        <label>Cliente:</label><input type="text" name="usuario" value="<?= htmlspecialchars($fUser) ?>">
+      <?php endif; ?>
 
       <label>Ordenar por:</label>
       <select name="ordenarPor">
-        <?php foreach (['numEquipo' => 'Equipo', 'fechaAlta' => 'Alta', 'fechaCompra' => 'Compra', 'usuario' => 'Usuario', 'costo' => 'Costo'] as $col => $lbl): ?>
+        <?php 
+        $orderOptions = ['numEquipo' => 'Equipo', 'fechaAlta' => 'Alta', 'fechaCompra' => 'Compra', 'costo' => 'Costo'];
+        if ($permiso !== 'cliente') {
+          $orderOptions['usuario'] = 'Usuario';
+        }
+        foreach ($orderOptions as $col => $lbl): 
+        ?>
           <option value="<?= $col ?>" <?= $orderBy === $col ? 'selected' : ''; ?>><?= $lbl ?></option>
         <?php endforeach; ?>
       </select>
@@ -414,10 +466,10 @@ function fmtMantenimiento($k)
               <th>Compra</th>
               <th>Tipo</th>
               <th>Maint.</th>
-              <th>CP</th>
-              <th>Prov.</th>
-              <th>Loc.</th>
-              <th>Cliente</th>
+              <th>Ubicación</th>
+              <?php if ($permiso !== 'cliente'): ?>
+                <th>Cliente</th>
+              <?php endif; ?>
               <th>Marca</th>
               <th>Modelo</th>
               <th>Serie</th>
@@ -433,15 +485,15 @@ function fmtMantenimiento($k)
                 <td><?= $r['fechaCompra'] ?: '<span class="empty">-</span>' ?></td>
                 <td><?= htmlspecialchars($tiposEquipo[$r['tipoEquipo']]['label'] ?? '-') ?></td>
                 <td><?= htmlspecialchars(fmtMantenimiento($r['tipoMantenimiento']) ?? '-') ?></td>
-                <td><?= $r['cp'] ?: '<span class="empty">-</span>' ?></td>
-                <td><?= $r['provincia'] ?: '<span class="empty">-</span>' ?></td>
-                <td><?= $r['localidad'] ?: '<span class="empty">-</span>' ?></td>
-                <td><?= $r['usuario'] ?: '<span class="empty">-</span>' ?></td>
+                <td><?= formatUbicacion($r['cp'], $r['provincia'], $r['localidad'], $r['ubicacion'] ?? '') ?></td>
+                <?php if ($permiso !== 'cliente'): ?>
+                  <td><?= $r['usuario'] ?: '<span class="empty">-</span>' ?></td>
+                <?php endif; ?>
                 <td><?= $r['marca'] ?: '<span class="empty">-</span>' ?></td>
                 <td><?= $r['modelo'] ?: '<span class="empty">-</span>' ?></td>
                 <td><?= $r['serie'] ?: '<span class="empty">-</span>' ?></td>
                 <td><?= $r['observaciones'] ?: '<span class="empty">Sin obs.</span>' ?></td>
-                <td><?= $r['costo'] ?: '<span class="empty">0</span>' ?></td>
+                <td>€<?= number_format($r['costo_decimal'] ?: 0, 2, ',', '.') ?></td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -470,8 +522,14 @@ function fmtMantenimiento($k)
               </div>
               <div class="card-row">
                 <div class="card-label">Ubicación:</div>
-                <div class="card-value"><?= implode(' / ', array_filter([$r['provincia'], $r['localidad']])) ?: '–' ?></div>
+                <div class="card-value"><?= formatUbicacion($r['cp'], $r['provincia'], $r['localidad'], $r['ubicacion'] ?? '') ?></div>
               </div>
+              <?php if ($permiso !== 'cliente'): ?>
+                <div class="card-row">
+                  <div class="card-label">Cliente:</div>
+                  <div class="card-value"><?= $r['usuario'] ?: '-' ?></div>
+                </div>
+              <?php endif; ?>
               <div class="card-row">
                 <div class="card-label">Marca/Modelo:</div>
                 <div class="card-value"><?= ($r['marca'] ?: '-') . ' / ' . ($r['modelo'] ?: '-') ?></div>
@@ -486,7 +544,7 @@ function fmtMantenimiento($k)
               </div>
               <div class="card-row">
                 <div class="card-label">Costo:</div>
-                <div class="card-value">€<?= $r['costo'] ?: '0' ?></div>
+                <div class="card-value">€<?= number_format($r['costo_decimal'] ?: 0, 2, ',', '.') ?></div>
               </div>
             </div>
           </div>

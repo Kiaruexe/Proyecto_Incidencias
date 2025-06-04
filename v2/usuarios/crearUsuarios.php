@@ -1,4 +1,105 @@
 <?php
+session_start();
+
+// Verificar si el usuario está logueado
+$usuarioLogueado = false;
+$permisoUsuario = null;
+
+// CORREGIDO: Primero verificar idUsuario (que es lo que establece el login)
+if (isset($_SESSION['idUsuario'])) {
+    // Si tenemos idUsuario, necesitamos obtener los datos del usuario de la BD
+    try {
+        $bd = new PDO(
+            'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa;charset=utf8', 
+            'Mapapli', 
+            '9R%d5cf62',
+            [ 
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]
+        );
+        
+        $sql = "SELECT usuario, correo, permiso FROM Usuarios WHERE idUsuarios = ?";
+        $stmt = $bd->prepare($sql);
+        $stmt->execute([$_SESSION['idUsuario']]);
+        $datosUsuario = $stmt->fetch();
+        
+        if ($datosUsuario) {
+            $usuarioLogueado = $datosUsuario['usuario'] ?? $datosUsuario['correo'];
+            $permisoUsuario = $datosUsuario['permiso'];
+            
+            // Opcionalmente, establecer estas variables en la sesión para futuros usos
+            $_SESSION['usuario'] = $datosUsuario['usuario'];
+            $_SESSION['correo'] = $datosUsuario['correo'];
+            $_SESSION['permiso'] = $datosUsuario['permiso'];
+        }
+        
+    } catch (PDOException $e) {
+        error_log("Error al obtener datos del usuario: " . $e->getMessage());
+    }
+} else {
+    // Fallback: buscar otras posibles variables de sesión
+    if (isset($_SESSION['usuario'])) {
+        $usuarioLogueado = $_SESSION['usuario'];
+    } elseif (isset($_SESSION['correo'])) {
+        $usuarioLogueado = $_SESSION['correo'];
+    } elseif (isset($_SESSION['email'])) {
+        $usuarioLogueado = $_SESSION['email'];
+    } elseif (isset($_SESSION['user'])) {
+        $usuarioLogueado = $_SESSION['user'];
+    }
+
+    // Buscar permiso
+    if (isset($_SESSION['permiso'])) {
+        $permisoUsuario = $_SESSION['permiso'];
+    } elseif (isset($_SESSION['tipo'])) {
+        $permisoUsuario = $_SESSION['tipo'];
+    } elseif (isset($_SESSION['rol'])) {
+        $permisoUsuario = $_SESSION['rol'];
+    } elseif (isset($_SESSION['nivel'])) {
+        $permisoUsuario = $_SESSION['nivel'];
+    }
+}
+
+// Si no hay usuario logueado, redirigir al login
+if (!$usuarioLogueado) {
+    echo "<script>
+            alert('⚠️ Acceso denegado. Debe iniciar sesión.');
+            window.location.href = '../login.php';
+          </script>";
+    exit;
+}
+
+// Si no hay permiso definido, redirigir al login
+if (!$permisoUsuario) {
+    echo "<script>
+            alert('⚠️ Acceso denegado. Permiso no encontrado en sesión.');
+            window.location.href = '../login.php';
+          </script>";
+    exit;
+}
+
+// Obtener el permiso del usuario actual
+$permisoUsuarioActual = $permisoUsuario;
+
+// Verificar permisos de acceso
+if (!in_array($permisoUsuarioActual, ['admin', 'recepcion', 'jefeTecnico'])) {
+    echo "<script>
+            alert('⚠️ No tiene permisos para acceder a esta función. Su permiso actual es: $permisoUsuarioActual');
+            window.location.href = '../home.php';
+          </script>";
+    exit;
+}
+
+// Definir qué tipos de usuarios puede crear cada rol
+$permisosCreacion = [
+    'admin' => ['cliente', 'recepcion', 'tecnico', 'admin', 'jefeTecnico'],
+    'recepcion' => ['cliente'],
+    'jefeTecnico' => ['cliente']
+];
+
+$tiposPermitidos = $permisosCreacion[$permisoUsuarioActual] ?? [];
+
 // Verificar si es una petición POST con datos de usuario
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {  
     function limpiarCampo($valor) {
@@ -31,9 +132,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         exit;
     }
 
+    // Verificar si el usuario actual puede crear este tipo de usuario
+    if (!in_array($permiso, $tiposPermitidos)) {
+        echo "<script>
+                alert('⚠️ No tiene permisos para crear usuarios de tipo: $permiso');
+                history.back();
+              </script>";
+        exit;
+    }
+
     try {
         $bd = new PDO(
-            'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa', 
+            'mysql:host=PMYSQL168.dns-servicio.com;port=3306;dbname=9981336_aplimapa;charset=utf8', 
             'Mapapli', 
             '9R%d5cf62',
             [ 
@@ -61,7 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
             // Iniciar transacción
             $bd->beginTransaction();
             
-            // MODIFICACIÓN: Agregado el campo 'restablecer' al INSERT
             $sql = "INSERT INTO Usuarios (
                 usuario, correo, contrasena, permiso, restablecer,
                 cpFiscal, provinciaFiscal, localidadFiscal, direccionFiscal,
@@ -71,7 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
             
             $stmt = $bd->prepare($sql);
             
-            // MODIFICACIÓN: Agregado el valor TRUE para 'restablecer' en los parámetros
             $params = [
                 $usuario,
                 $correo,
@@ -162,13 +270,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
       padding: 15px 0;
       text-align: center;
       position: relative;
-      flex-shrink: 0; /* Evita que el header se comprima */
+      flex-shrink: 0;
     }
 
     .header-mapache h1 {
       font-size: 32px;
       font-weight: bold;
       margin: 0;
+    }
+
+    /* Usuario actual en el header */
+    .user-info {
+        position: absolute;
+        top: 15px;
+        left: 20px;
+        color: white;
+        font-size: 14px;
     }
 
     /* Icono de casa en la esquina superior derecha */
@@ -206,7 +323,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         margin: 30px 0;
         font-weight: 600;
         margin-right: 300px;
-
     }
 
     /* Contenedor principal del formulario */
@@ -226,7 +342,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         text-align: center;
         margin-top: 10px;
         margin-right: 300px;
-        
     }
 
     .btn-modificar {
@@ -304,6 +419,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         height: 38px;
     }
 
+    /* Opciones deshabilitadas */
+    option:disabled {
+        color: #999;
+        background-color: #f5f5f5;
+    }
+
     /* Botones */
     .button-container {
         display: flex;
@@ -360,8 +481,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         text-align: center;
         padding: 15px 0;
         font-size: 14px;
-        flex-shrink: 0; /* Evita que el footer se comprima */
-        margin-top: auto; /* Empuja el footer hacia abajo */
+        flex-shrink: 0;
+        margin-top: auto;
     }
 
     /* Responsivo mejorado */
@@ -395,6 +516,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         .form-title {
             font-size: 1.5rem;
         }
+
+        .user-info {
+            position: static;
+            text-align: center;
+            margin-bottom: 10px;
+        }
     }
 
     /* Ajuste para pantallas grandes */
@@ -405,6 +532,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
     }
       </style>
     <script>
+      // Permisos permitidos para el usuario actual (desde PHP)
+      const tiposPermitidos = <?php echo json_encode($tiposPermitidos); ?>;
+
       // Mostrar/ocultar direcciones + asignar/quitar "required"
       function toggleCampos() {
         const permisoSelect = document.getElementById('permiso');
@@ -426,6 +556,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         }
       }
 
+      // Función para configurar opciones del select según permisos
+      function configurarOpcionesPermiso() {
+        const permisoSelect = document.getElementById('permiso');
+        const opciones = permisoSelect.querySelectorAll('option');
+        
+        opciones.forEach(opcion => {
+          if (opcion.value && !tiposPermitidos.includes(opcion.value)) {
+            opcion.disabled = true;
+            opcion.style.display = 'none';
+          }
+        });
+      }
+
       // Función mejorada para prevenir envíos duplicados
       function prevenirEnvioDuplicado() {
         const form = document.getElementById('registro-form');
@@ -433,7 +576,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
         
         if (form && submitBtn) {
           form.addEventListener('submit', function(e) {
-            // Deshabilitar el botón después del primer clic
             submitBtn.disabled = true;
             submitBtn.innerHTML = 'Procesando...';
             return true;
@@ -450,6 +592,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
 
         if (!usuario || !correo || !contrasena || !permiso) {
           alert('Por favor, complete todos los campos obligatorios');
+          return false;
+        }
+
+        // Verificar permisos
+        if (!tiposPermitidos.includes(permiso)) {
+          alert('No tiene permisos para crear usuarios de tipo: ' + permiso);
           return false;
         }
 
@@ -470,6 +618,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
       }
 
       document.addEventListener('DOMContentLoaded', () => {
+        configurarOpcionesPermiso();
         toggleCampos(); 
         document.getElementById('permiso').addEventListener('change', toggleCampos);
         prevenirEnvioDuplicado();
@@ -479,11 +628,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
 <body>
     <!-- Header principal -->
     <div class="header-mapache">
+        <div class="user-info">
+            Usuario: <?php echo htmlspecialchars($usuarioLogueado ?? 'Desconocido'); ?> 
+            (<?php echo ucfirst($permisoUsuarioActual); ?>)
+        </div>
         <h1>Mapache Security</h1>
         <a href="../home.php" class="home-icon">
             <i class="fas fa-home"></i>
         </a>
     </div>
+    
     <div class="main-content">
         <h1 class="form-title">Crear Usuario</h1>
         
@@ -501,11 +655,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['usuario'])) {
                 <label>Permiso: *</label>
                 <select name="permiso" id="permiso" required>
                     <option value="">Seleccione un permiso</option>
+                    <?php if (in_array('cliente', $tiposPermitidos)): ?>
                     <option value="cliente">Cliente</option>
+                    <?php endif; ?>
+                    <?php if (in_array('recepcion', $tiposPermitidos)): ?>
                     <option value="recepcion">Recepción</option>
+                    <?php endif; ?>
+                    <?php if (in_array('tecnico', $tiposPermitidos)): ?>
                     <option value="tecnico">Técnico</option>
+                    <?php endif; ?>
+                    <?php if (in_array('admin', $tiposPermitidos)): ?>
                     <option value="admin">Admin</option>
+                    <?php endif; ?>
+                    <?php if (in_array('jefeTecnico', $tiposPermitidos)): ?>
                     <option value="jefeTecnico">Jefe Técnico</option>
+                    <?php endif; ?>
                 </select>
 
                 <div id="direcciones-container">

@@ -197,7 +197,7 @@ try {
             <div class="buttons">
                 <a href="configuracion/confContadores.php" class="btn btn-contadores">Contadores</a>
                 <div class="row">
-                    <a href="configuracion/confPagos.php" class="btn btn-pagos">Métodos de Pago</a>
+                    <a href="configuracion/confPagos.php" class="btn btn-pagos">Tipos de Servicio</a>
                     <a href="configuracion/confTiposEquipo.php" class="btn btn-tipos">Tipos de Equipo</a>
                 </div>
             </div>
