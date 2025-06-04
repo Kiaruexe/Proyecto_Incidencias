@@ -31,4 +31,9 @@ $tiposMantenimiento = array (
     'label' => 'Transferencia',
     'descripcion' => 'Servicio de pago por transferencia bancaria',
   ),
+  'metalico' => 
+  array (
+    'label' => 'Metalico',
+    'descripcion' => 'Servicio de pago metalico',
+  ),
 );

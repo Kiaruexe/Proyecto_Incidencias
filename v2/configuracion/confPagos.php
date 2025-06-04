@@ -13,6 +13,25 @@ $mensaje = '';
 $error = '';
 $tiposMantenimiento = [];
 
+// Función para generar valor automáticamente desde la etiqueta
+function generarValor($etiqueta) {
+    // Convertir a minúsculas
+    $valor = strtolower($etiqueta);
+    
+    // Reemplazar espacios y caracteres especiales con guiones bajos
+    $valor = preg_replace('/[^a-z0-9]+/', '_', $valor);
+    
+    // Eliminar guiones bajos al inicio y final
+    $valor = trim($valor, '_');
+    
+    // Si queda vacío, usar un valor por defecto
+    if (empty($valor)) {
+        $valor = 'tipo_servicio';
+    }
+    
+    return $valor;
+}
+
 // Función para leer los tipos de mantenimiento desde el archivo
 function leerTiposMantenimiento() {
     $archivoJson = '../configuracion/tiposMantenimiento.json';
@@ -109,18 +128,24 @@ if (!is_array($tiposMantenimiento)) {
 // Procesar formulario de agregar nuevo tipo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['agregar_tipo'])) {
-        $valor = isset($_POST['valor']) ? strtolower(trim($_POST['valor'])) : '';
         $etiqueta = isset($_POST['etiqueta']) ? trim($_POST['etiqueta']) : '';
         $descripcion = isset($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
         
+        // Generar valor automáticamente
+        $valor = generarValor($etiqueta);
+        
         // Validar entradas
-        if (empty($valor) || empty($etiqueta)) {
-            $error = 'Los campos Valor y Etiqueta son obligatorios.';
-        } elseif (preg_match('/[^a-z0-9_]/', $valor)) {
-            $error = 'El valor solo puede contener letras minúsculas, números y guiones bajos.';
-        } elseif (isset($tiposMantenimiento[$valor])) {
-            $error = 'Ya existe un tipo de servicio con ese valor.';
+        if (empty($etiqueta)) {
+            $error = 'El campo Etiqueta es obligatorio.';
         } else {
+            // Verificar si ya existe un tipo con el mismo valor generado
+            $valorOriginal = $valor;
+            $contador = 1;
+            while (isset($tiposMantenimiento[$valor])) {
+                $valor = $valorOriginal . '_' . $contador;
+                $contador++;
+            }
+            
             // Agregar nuevo tipo
             $tiposMantenimiento[$valor] = [
                 'label' => $etiqueta,
@@ -369,7 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           font-weight: bold;
         }
 
-        /* Formulario en dos columnas */
+        /* Formulario simplificado */
         .form-row {
           display: flex;
           gap: 20px;
@@ -594,10 +619,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p>No hay tipos de Servicios definidos. Por favor, agregue uno a continuación.</p>
                 </div>
             <?php else: ?>
-                <table  border= 1 class="tabla-tipos">
+                <table border="1" class="tabla-tipos">
                     <thead>
                         <tr>
-                            <th>Valor</th>
                             <th>Etiqueta</th>
                             <th>Descripción</th>
                             <th>Acciones</th>
@@ -606,7 +630,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <tbody>
                         <?php foreach ($tiposMantenimiento as $valor => $datos): ?>
                             <tr>
-                                <td><?= htmlspecialchars($valor) ?></td>
                                 <td><?= htmlspecialchars($datos['label']) ?></td>
                                 <td><?= htmlspecialchars($datos['descripcion'] ?? '') ?></td>
                                 <td>
@@ -630,18 +653,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h2>Agregar Nuevo Tipo de Servicio</h2>
             
             <form method="post" action="" id="agregar-form" onsubmit="return validarFormulario()">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="valor">Valor (identificador único)</label>
-                        <input type="text" id="valor" name="valor" pattern="[a-z0-9_]+" 
-                               title="Solo letras minúsculas, números o guiones bajos" required>
-                        <small>Este valor se usa internamente. Solo use letras minúsculas, números y guiones bajos, sin espacios.</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="etiqueta">Etiqueta (nombre visible)</label>
-                        <input type="text" id="etiqueta" name="etiqueta" required>
-                        <small>Este es el nombre que se mostrará a los clientes.</small>
-                    </div>
+                <div class="form-group">
+                    <label for="etiqueta">Nombre del Servicio</label>
+                    <input type="text" id="etiqueta" name="etiqueta" required>
+                    <small>Este es el nombre que se mostrará a los clientes. El identificador se generará automáticamente.</small>
                 </div>
                 
                 <div class="form-group-full">
@@ -661,12 +676,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="post" action="" id="editar-form" onsubmit="return validarFormularioEdicion()">
                 <input type="hidden" id="tipo_editar" name="tipo_editar" value="">
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="nueva_etiqueta">Etiqueta</label>
-                        <input type="text" id="nueva_etiqueta" name="nueva_etiqueta" required>
-                    </div>
+                <div class="form-group">
+                    <label for="nueva_etiqueta">Etiqueta</label>
+                    <input type="text" id="nueva_etiqueta" name="nueva_etiqueta" required>
                 </div>
+                
                 <div class="form-group-full">
                     <label for="nueva_descripcion">Descripción</label>
                     <textarea id="nueva_descripcion" name="nueva_descripcion"></textarea>
@@ -682,23 +696,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         // Validación del formulario de agregar
         function validarFormulario() {
-            var valor = document.getElementById('valor').value.trim();
             var etiqueta = document.getElementById('etiqueta').value.trim();
             
-            if (valor === '') {
-                alert('El campo Valor es obligatorio.');
-                return false;
-            }
-            
             if (etiqueta === '') {
-                alert('El campo Etiqueta es obligatorio.');
-                return false;
-            }
-            
-            // Validar que solo contenga letras minúsculas, números y guiones bajos
-            var pattern = /^[a-z0-9_]+$/;
-            if (!pattern.test(valor)) {
-                alert('El valor solo puede contener letras minúsculas, números y guiones bajos.');
+                alert('El campo Nombre del Servicio es obligatorio.');
                 return false;
             }
             

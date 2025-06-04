@@ -881,326 +881,309 @@ if (isset($_POST['modificar'])) {
 <head>
     <meta charset="UTF-8">
     <title>Modificar Equipo</title>
-    <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="…">
     <style>
-         :root {
-            --naranja: #f9ab25;
-            --verde: #27ae60;
-            --verde-hover: #219150;
-            --naranja-hover: #e0981f;
+     *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f0f2f5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        color: #333;
+    }
+
+    .header-mapache {
+        background: #002255;
+        color: white;
+        padding: 15px 0;
+        text-align: center;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .header-mapache h1 {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .home-icon {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+        padding: 5px;
+        border-radius: 4px;
+    }
+    .home-icon .fas {
+        color: white;
+        font-size: 24px;
+    }
+    .home-icon:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .container {
+        flex: 1 0 auto;
+        max-width: 1000px;
+        margin: 50px auto 80px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 30px 40px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .registro {
+        text-align: center;
+        font-size: 2.4rem;
+        margin-bottom: 20px;
+        color: #00225a;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        user-select: none;
+    }
+
+    .descripcion {
+        font-size: 1.1rem;
+        color: #555;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .descripcion strong {
+        color: #00225a;
+    }
+
+    form {
+        margin-top: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
+    }
+
+    .form-group {
+        flex: 1 1 45%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full-width {
+        flex: 1 1 100%;
+    }
+
+    label {
+        font-weight: 700;
+        color: #00225a;
+        margin-bottom: 8px;
+        user-select: none;
+        font-size: 1.1rem;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+        font-size: 1rem;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 2px solid #2573fa;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        resize: vertical;
+        color: #333;
+        background-color: #f9fbff;
+        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
+        min-height: 45px;
+    }
+
+    /* CORRECCION IMPORTANTE: Aseguramos que los select NO tengan altura fija */
+    select {
+        min-height: 45px;
+        height: auto; /* Permitir altura automática */
+        appearance: auto; /* Mantener apariencia nativa del select */
+        -webkit-appearance: auto;
+        -moz-appearance: auto;
+    }
+
+    /* Eliminamos cualquier override que pueda estar causando problemas */
+    select:not([multiple]) {
+        height: 45px !important;
+        overflow: visible !important;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #f9ab25;
+        box-shadow: 0 0 6px #f9ab25;
+        background-color: #fff;
+    }
+
+    textarea {
+        min-height: 120px;
+        max-height: 180px;
+        padding-top: 14px;
+    }
+
+    .error-input {
+        border-color: #e74c3c !important;
+        box-shadow: 0 0 6px rgba(231, 76, 60, 0.5) !important;
+    }
+
+    .error-message {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+
+    div[id^="grupo-"] {
+        flex: 1 1 45%;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0;
+    }
+
+    #grupo-observaciones {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        order: 999;
+    }
+
+    #grupo-observaciones textarea {
+        min-height: 150px !important;
+        max-height: 200px !important;
+        width: 100% !important;
+    }
+
+    .btn-group {
+        width: 100%;
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 30px;
+        order: 1000;
+    }
+
+    .btn-modificar,
+    .btn-cancelar {
+        flex: 1 1 160px;
+        max-width: 200px;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 30px;
+        font-weight: 800;
+        font-size: 1.05rem;
+        cursor: pointer;
+        text-align: center;
+        user-select: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .btn-modificar {
+        background-color: #f9ab25;
+        color: #000;
+    }
+
+    .btn-modificar:hover {
+        background-color: #d38e00;
+        transform: translateY(-2px);
+    }
+
+    .btn-cancelar {
+        background-color: #6c757d;
+        color: #fff;
+    }
+
+    .btn-cancelar:hover {
+        background-color: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .footer {
+        background-color: #000;
+        color: #fff;
+        padding: 16px 10px;
+        font-size: 0.9rem;
+        text-align: center;
+        user-select: none;
+        flex-shrink: 0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+        position: relative;
+        z-index: 100;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            margin: 60px 15px 80px;
+            padding: 25px 20px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        .form-group,
+        div[id^="grupo-"] {
+            flex: 1 1 100%;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: white;
-            min-height: 100vh;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+        .btn-group {
+            justify-content: center;
         }
 
-        .header-mapache {
-            background: #002255;
-            color: white;
-            padding: 15px 0;
-            text-align: center;
-            position: relative;
-        }
-
-        .header-mapache h1 {
-            font-size: 32px;
-            font-weight: bold;
-            margin: 0;
+        .btn-modificar,
+        .btn-cancelar {
+            max-width: 100%;
+            flex: 1 1 100%;
         }
 
         .home-icon {
-            position: absolute;
-            top: 15px;
             right: 20px;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
+            font-size: 1.3rem;
         }
+    }
 
-        .home-icon .fas {
-            color: white;
-            font-size: 24px;
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
         }
-
-        .home-icon:hover {
-            background: rgba(255, 255, 255, 0.2);
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
+    }
 
-        .header-bar {
-            background: #1e3a8a;
-            padding: 20px 0;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+    .container {
+        animation: fadeIn 0.6s ease-out;
+    }
 
-        .header-bar h1 {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0;
-        }
+    input[type="text"]:disabled,
+    input[type="date"]:disabled,
+    input[type="number"]:disabled,
+    select:disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+        color: #6c757d;
+    }
 
-        .form-title {
-            text-align: center;
-            font-size: 2rem;
-            color: #333;
-            margin: 30px 0;
-            font-weight: 600;
-        }
-
-        .form-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
-        form {
-            background: #e6f3ff;
-            padding: 40px;
-            border: 3px solid #000;
-            border-radius: 0;
-            width: 100%;
-            max-width: 900px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                margin-left: 500px; /* Para centrar el formulario */
-        }
-
-        .registro{
-          margin-left: 825px;
-        }
-        .descripcion{
-          margin-left: 500px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-            align-items: end;
-        }
-
-        .direccion-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-            align-items: end;
-        }
-
-        .provincia-row {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-bottom: 25px;
-            align-items: end;
-        }
-
-        .localidad-direccion-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-            align-items: end;
-        }
-
-        .campo-grupo {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 15px;
-        }
-
-        label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        input[type="date"],
-        select,
-        textarea {
-            padding: 8px 12px;
-            border: 2px solid #333;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            font-family: inherit;
-            background: white;
-            outline: none;
-            height: 38px;
-        }
-
-        #cp, #provincia, #localidad, #direccion {
-            border-radius: 25px;
-            padding: 8px 16px;
-            border: 2px solid #333;
-            height: 38px;
-        }
-
-        select[multiple] {
-            min-height: 60px;
-            padding: 6px;
-            height: auto;
-        }
-
-        select:not([multiple]) {
-            height: 38px;
-        }
-
-        /* Estilos mejorados para los botones */
-        .button-container {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 30px;
-        }
-
-        .btn-modificar {
-            background: var(--verde);
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            min-width: 150px;
-        }
-
-        .btn-modificar:hover {
-            background: var(--verde-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
-        }
-
-        .btn-cancelar {
-            background: var(--naranja);
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            min-width: 150px;
-        }
-
-        .btn-cancelar:hover {
-            background: var(--naranja-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(249, 171, 37, 0.3);
-        }
-
-        .error-message {
-            color: #dc2626;
-            font-size: 0.8rem;
-            margin-top: 3px;
-        }
-
-        .campo-grupo[style*="display:none"],
-        .campo-grupo[style*="display: none"] {
-            display: none !important;
-        }
-
-        .footer {
-            background: rgb(0, 0, 0);
-            color: white;
-            text-align: center;
-            padding: 15px 0;
-            margin-top: auto;
-            font-size: 14px;
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-        }
-
-        .campo-grupo:first-child {
-            margin-bottom: 20px;
-        }
-
-        .form-container .campo-grupo {
-            margin-bottom: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .form-container {
-                max-width: 100%;
-                padding: 0 15px;
-            }
-
-            form {
-                padding: 25px;
-                max-width: 100%;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-                margin-bottom: 20px;
-            }
-            
-            .direccion-row {
-                grid-template-columns: 1fr;
-                gap: 15px;
-                margin-bottom: 20px;
-            }
-
-            .provincia-row {
-                grid-template-columns: 1fr;
-                gap: 15px;
-                margin-bottom: 20px;
-            }
-
-            .localidad-direccion-row {
-                grid-template-columns: 1fr;
-                gap: 15px;
-                margin-bottom: 20px;
-            }
-            
-            .button-container {
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-            }
-            
-            .header-bar h1 {
-                font-size: 2rem;
-            }
-
-            .form-title {
-                font-size: 1.5rem;
-            }
-        }
-
-        @media (min-width: 1200px) {
-            .form-container {
-                max-width: 900px;
-            }
-        }
+    select option:disabled {
+        color: #6c757d;
+        background-color: #f8f9fa;
+    }
     </style>
 <script>
        function autocompletarDireccion() {
@@ -1245,8 +1228,8 @@ if (isset($_POST['modificar'])) {
         }
 
         function actualizarCampos() {
-            const select = document.getElementsByName('tipoEquipo[]')[0];
-            let values = Array.from(select.selectedOptions).map(opt => opt.value);
+           const select = document.getElementsByName('tipoEquipo')[0];
+           let tipoEquipo = select.value;
             const grupos = [
                 'grupo-marca', 'grupo-modelo', 'grupo-serie', 'grupo-placa', 'grupo-procesador',
                 'grupo-memoria', 'grupo-disco', 'grupo-pantalla', 'grupo-observaciones',
@@ -1260,9 +1243,8 @@ if (isset($_POST['modificar'])) {
             });
             
             // Si no hay tipo seleccionado, no mostrar nada
-            if (!values.length) return;
+            if (!tipoEquipo) return;
             
-            let tipoEquipo = values[0];
             
             // Usar los tipos de equipo definidos en PHP
             const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
@@ -1341,17 +1323,6 @@ if (isset($_POST['modificar'])) {
             return true;
         }
 
-        // Validar elementos multi-select
-        function validarMultiSelect(input, fieldName) {
-            if (input.selectedOptions.length === 0) {
-                alert(`Debe seleccionar al menos una opción en ${fieldName}`);
-                input.classList.add('error-input');
-                return false;
-            }
-            input.classList.remove('error-input');
-            return true;
-        }
-
         // Función para limpiar errores de campos específicos
         function clearFieldError(input) {
             input.classList.remove('error-input');
@@ -1398,9 +1369,9 @@ if (isset($_POST['modificar'])) {
             resetFormErrors();
             
             // Validar tipo de equipo
-            const tipoEquipo = document.getElementsByName('tipoEquipo[]')[0];
-            if (!validarMultiSelect(tipoEquipo, "Tipo de Equipo")) {
-                isValid = false;
+            const tipoEquipo = document.getElementsByName('tipoEquipo')[0];
+            if (!validarSelect(tipoEquipo, "Tipo de Equipo")) {
+            isValid = false;
             }
             
             // Validar fecha de compra (opcional)
@@ -1453,8 +1424,8 @@ if (isset($_POST['modificar'])) {
             }
             
             // Validar campos específicos según el tipo de equipo seleccionado
-            if (tipoEquipo.selectedOptions.length > 0) {
-                const selectedEquipo = tipoEquipo.selectedOptions[0].value;
+            if (tipoEquipo.value) {
+             const selectedEquipo = tipoEquipo.value;
                 const tiposEquipo = <?= json_encode($tiposEquipo) ?>;
                 
                 if (tiposEquipo[selectedEquipo] && tiposEquipo[selectedEquipo].campos) {
@@ -1642,13 +1613,12 @@ if (isset($_POST['modificar'])) {
                     });
                 }
             });
-            // Validar multiselect
-            const tipoEquipo = document.getElementsByName('tipoEquipo[]')[0];
+            // Validar select simple de tipo de equipo
+            const tipoEquipo = document.getElementsByName('tipoEquipo')[0];
             if (tipoEquipo) {
-                tipoEquipo.addEventListener('change', function() {
-                    validarMultiSelect(this, "Tipo de Equipo");
-                    // Actualizar campos visibles basados en la selección
-                    actualizarCampos();
+             tipoEquipo.addEventListener('change', function() {
+             validarSelect(this, "Tipo de Equipo");
+             actualizarCampos();
                 });
             }
             // Añadir validación de garantía en tiempo real
@@ -1672,14 +1642,16 @@ if (isset($_POST['modificar'])) {
         <i class="fas fa-home"></i>
         </a>
     </div>
+     <div class="container">
     <h1 class= "registro">Modificar Equipo</h1>
     
     <p class= "descripcion"><strong>Número de Equipo:</strong> 001</p>
     <p class= "descripcion"><strong>Fecha de Alta:</strong> 12/05/2025</p>
     
     <form method="post" action="" onsubmit="return validateForm() && confirm('¿Está seguro que desea modificar este equipo?')">
+        <div class="form-group">
         <label>Tipo de Equipo:</label><br/>
-        <select name="tipoEquipo[]" multiple onchange="actualizarCampos()" required>
+        <select name="tipoEquipo" onchange="actualizarCampos()" required>
             <option value="">-- Seleccione --</option>
             <?php foreach ($tiposEquipo as $val => $info): ?>
                 <option value="<?= htmlspecialchars($val) ?>"
@@ -1688,77 +1660,78 @@ if (isset($_POST['modificar'])) {
                 </option>
             <?php endforeach; ?>
         </select>
-        <br/><br/>
+        </div>
 
-        <!-- Campo Fecha de Compra con valor de la BD -->
+        <div class="form-group">
         <label>Fecha de Compra:</label><br/>
-        <input type="date" id="fechaCompra" name="fechaCompra" value="<?= htmlspecialchars($equipoData['fechaCompra'] ?? '') ?>"><br/><br/>
-
-        <div id="grupo-marca" style="display:none;">
+        <input type="date" id="fechaCompra" name="fechaCompra" value="<?= htmlspecialchars($equipoData['fechaCompra'] ?? '') ?>">
+        </div>
+        
+        <div id="grupo-marca" style="display:none;"  class="form-group">
             <label>Marca:</label><br/>
-            <input type="text" name="marca" value="<?= htmlspecialchars($equipoData['marca'] ?? '') ?>"><br/><br/>
+            <input type="text" name="marca" value="<?= htmlspecialchars($equipoData['marca'] ?? '') ?>">
         </div>
-
-        <div id="grupo-modelo" style="display:none;">
+                
+        <div id="grupo-modelo" style="display:none;" class="form-group">
             <label>Modelo:</label><br/>
-            <input type="text" name="modelo" value="<?= htmlspecialchars($equipoData['modelo'] ?? '') ?>"><br/><br/>
+            <input type="text" name="modelo" value="<?= htmlspecialchars($equipoData['modelo'] ?? '') ?>">
         </div>
-
-        <div id="grupo-serie" style="display:none;">
+       
+        <div id="grupo-serie" style="display:none;" class="form-group">
             <label>Serie:</label><br/>
-            <input type="text" name="serie" value="<?= htmlspecialchars($equipoData['serie'] ?? '') ?>"><br/><br/>
+            <input type="text" name="serie" value="<?= htmlspecialchars($equipoData['serie'] ?? '') ?>">
         </div>
 
-        <div id="grupo-placa" style="display:none;">
+        <div id="grupo-placa" style="display:none;" class="form-group">
             <label>Placa:</label><br/>
-            <input type="text" name="placa" value="<?= htmlspecialchars($equipoData['placa'] ?? '') ?>"><br/><br/>
+            <input type="text" name="placa" value="<?= htmlspecialchars($equipoData['placa'] ?? '') ?>">
         </div>
 
-        <div id="grupo-procesador" style="display:none;">
+        <div id="grupo-procesador" style="display:none;" class="form-group">
             <label>Procesador:</label><br/>
-            <input type="text" name="procesador" value="<?= htmlspecialchars($equipoData['procesador'] ?? '') ?>"><br/><br/>
+            <input type="text" name="procesador" value="<?= htmlspecialchars($equipoData['procesador'] ?? '') ?>">
         </div>
 
-        <div id="grupo-memoria" style="display:none;">
+        <div id="grupo-memoria" style="display:none;" class="form-group">
             <label>Memoria:</label><br/>
-            <input type="text" name="memoria" value="<?= htmlspecialchars($equipoData['memoria'] ?? '') ?>"><br/><br/>
+            <input type="text" name="memoria" value="<?= htmlspecialchars($equipoData['memoria'] ?? '') ?>">
         </div>
 
-        <div id="grupo-disco" style="display:none;">
+        <div id="grupo-disco" style="display:none;" class="form-group">
             <label>Disco:</label><br/>
-            <input type="text" name="disco" value="<?= htmlspecialchars($equipoData['disco'] ?? '') ?>"><br/><br/>
+            <input type="text" name="disco" value="<?= htmlspecialchars($equipoData['disco'] ?? '') ?>">
         </div>
 
-        <div id="grupo-pantalla" style="display:none;">
+        <div id="grupo-pantalla" style="display:none;" class="form-group">
             <label>Pantalla:</label><br/>
-            <input type="text" name="pantalla" value="<?= htmlspecialchars($equipoData['pantalla'] ?? '') ?>"><br/><br/>
+            <input type="text" name="pantalla" value="<?= htmlspecialchars($equipoData['pantalla'] ?? '') ?>">
         </div>
 
-        <div id="grupo-observaciones" style="display:none;">
+        <div id="grupo-observaciones" style="display:none;" class="form-group full-width">
             <label>Observaciones:</label><br/>
-            <textarea name="observaciones"><?= htmlspecialchars($equipoData['observaciones'] ?? '') ?></textarea><br/><br/>
+            <textarea name="observaciones"><?= htmlspecialchars($equipoData['observaciones'] ?? '') ?></textarea>
         </div>
 
-        <div id="grupo-costo" style="display:none;">
+        <div id="grupo-costo" style="display:none;" class="form-group">
             <label>Costo:</label><br/>
-            <input type="text" step="0.01" name="costo" value="<?= htmlspecialchars($equipoData['costo'] ?? '') ?>"><br/><br/>
+            <input type="text" step="0.01" name="costo" value="<?= htmlspecialchars($equipoData['costo'] ?? '') ?>">
         </div>
 
-        <div id="grupo-sistema" style="display:none;">
+        <div id="grupo-sistema" style="display:none;" class="form-group">
             <label>Sistema:</label><br/>
-            <input type="text" name="sistema" value="<?= htmlspecialchars($equipoData['sistema'] ?? '') ?>"><br/><br/>
+            <input type="text" name="sistema" value="<?= htmlspecialchars($equipoData['sistema'] ?? '') ?>">
         </div>
 
-        <div id="grupo-ubicacion" style="display:none;">
+        <div id="grupo-ubicacion" style="display:none;" class="form-group">
             <label>Ubicación:</label><br/>
-            <input type="text" name="ubicacion" value="<?= htmlspecialchars($equipoData['ubicacion'] ?? '') ?>"><br/><br/>
+            <input type="text" name="ubicacion" value="<?= htmlspecialchars($equipoData['ubicacion'] ?? '') ?>">
         </div>
 
-        <div id="grupo-tipo" style="display:none;">
+        <div id="grupo-tipo" style="display:none;" class="form-group">
             <label>Tipo (Especifique):</label><br/>
-            <input type="text" name="tipo" value="<?= htmlspecialchars($equipoData['tipo'] ?? '') ?>"><br/><br/>
+            <input type="text" name="tipo" value="<?= htmlspecialchars($equipoData['tipo'] ?? '') ?>">
         </div>
-
+    <div class="form-group">
         <label>Tipo de Servicio:</label><br/>
         <select name="tipoMantenimiento" required>
             <option value="">-- Seleccione --</option>
@@ -1769,22 +1742,25 @@ if (isset($_POST['modificar'])) {
                 </option>
             <?php endforeach; ?>
         </select>
-        <br/><br/>
-
+    </div>
+           <div class="form-group">     
         <label>Código Postal:</label><br/>
         <input type="text" id="cp" name="cp" value="<?= htmlspecialchars($equipoData['cp'] ?? '') ?>" required minlength="5">
         <div id="cp-error" class="error-message" style="display: none;"></div>
-        <br/><br/>
-
+           </div>
+                <div class="form-group">
         <label>Provincia:</label><br/>
-        <input type="text" id="provincia" name="provincia" value="<?= htmlspecialchars($equipoData['provincia'] ?? '') ?>" required><br/><br/>
-
+        <input type="text" id="provincia" name="provincia" value="<?= htmlspecialchars($equipoData['provincia'] ?? '') ?>" required>
+    </div>
+    <div class="form-group">
         <label>Localidad:</label><br/>
-        <input type="text" id="localidad" name="localidad" value="<?= htmlspecialchars($equipoData['localidad'] ?? '') ?>" required><br/><br/>
-
+        <input type="text" id="localidad" name="localidad" value="<?= htmlspecialchars($equipoData['localidad'] ?? '') ?>" required>
+    </div>
+    <div class="form-group">
         <label>Dirección:</label><br/>
-        <input type="text" id="direccion" name="direccion" value="<?= htmlspecialchars($equipoData['direccion'] ?? '') ?>" required><br/><br/>
-
+        <input type="text" id="direccion" name="direccion" value="<?= htmlspecialchars($equipoData['direccion'] ?? '') ?>" required>
+    </div>
+    <div class="form-group">
         <label>Seleccione el Cliente:</label><br/>
         <select id="idUsuario" name="idUsuario" onchange="autocompletarDireccion()" required>
             <option value="">-- Selecciona un Cliente --</option>
@@ -1809,20 +1785,26 @@ if (isset($_POST['modificar'])) {
                 </option>
             <?php endforeach; ?>
         </select>
-        <br/><br/>
-
+    </div>
+    <div class="form-group">
         <label>Tipo de dirección:</label><br/>
         <select id="tipoDireccion" onchange="autocompletarDireccion()">
             <option value="fiscal" <?= ($equipoData['tipoDireccion'] ?? 'fiscal') === 'fiscal' ? 'selected' : '' ?>>Fiscal</option>
             <option value="1" <?= ($equipoData['tipoDireccion'] ?? '') === '1' ? 'selected' : '' ?>>Dirección 1</option>
             <option value="2" <?= ($equipoData['tipoDireccion'] ?? '') === '2' ? 'selected' : '' ?>>Dirección 2</option>
         </select>
-        <br/><br/>
-
+    </div>
+    <div class="btn-group">
         <input type="submit" name="modificar" value="Modificar Equipo" class="btn-modificar" onclick="normalizarCosto()">
         <button type="button" onclick="window.location.href='../home.php'" class="btn-cancelar">Cancelar</button>
+        <a href="pdf_equipo.php?numEquipo=<?= urlencode($equipoData['numEquipo']) ?>" target="_blank"
+        style="display: inline-block; padding: 12px 24px; background-color: #d73838; color: white; text-decoration: none; font-weight: bold; border-radius: 6px;">
+        <i class="bi bi-file-earmark-pdf-fill"></i> Generar PDF
+    </a>
+    </div>
     </form>
-    <br/><br/>
+    </div>
+    
     <div class="footer">
     <p>&copy;  <?php echo date('Y'); ?> Todos los derechos reservados.</p>
   </div>

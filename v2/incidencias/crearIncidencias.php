@@ -531,7 +531,7 @@ if (isset($_POST['crear']) && ($permiso !== 'cliente' || $tieneEquipos)) {
           </div>
 
           <div class="form-group">
-            <label for="numero">Número (9 dígitos)</label>
+            <label for="numero">Teléfono (9 dígitos)</label>
             <input type="number" name="numero" id="numero" required min="100000000" max="999999999" step="1" maxlength="9"
               value="<?= htmlspecialchars($numeroPrev) ?>" pattern="\d{9}" title="Debe contener exactamente 9 dígitos">
           </div>
@@ -549,10 +549,12 @@ if (isset($_POST['crear']) && ($permiso !== 'cliente' || $tieneEquipos)) {
           <div class="btn-group">
             <input type="submit" name="crear" value="Crear incidencia">
           </div>
+          <?php if (in_array($permiso, ['admin', 'recepcion', 'jefetecnico'])): ?>
 
           <div class="nuevo-equipo">
             <button type="button" onclick="window.open('../equipos/crearEquipos.php', '_blank')">Crear nuevo equipo</button>
           </div>
+          <?php endif; ?>
 
         <?php else: ?>
           <p style="color:red;">No tienes equipos asignados.</p>
@@ -600,7 +602,7 @@ if (isset($_POST['crear']) && ($permiso !== 'cliente' || $tieneEquipos)) {
           </div>
 
           <div class="form-group">
-            <label for="numero">Número (9 dígitos)</label>
+            <label for="numero">Teléfono (9 dígitos)</label>
             <input type="number" name="numero" id="numero" required min="100000000" max="999999999" step="1" maxlength="9"
               value="<?= htmlspecialchars($numeroPrev) ?>" pattern="\d{9}" title="Debe contener exactamente 9 dígitos">
           </div>
@@ -648,7 +650,7 @@ if (isset($_POST['crear']) && ($permiso !== 'cliente' || $tieneEquipos)) {
           </div>
 
           <div class="form-group">
-            <label for="numero">Número (9 dígitos)</label>
+            <label for="numero">Teléfono (9 dígitos)</label>
             <input type="number" name="numero" id="numero" required min="100000000" max="999999999" step="1" maxlength="9"
               value="<?= htmlspecialchars($numeroPrev) ?>" pattern="\d{9}" title="Debe contener exactamente 9 dígitos">
           </div>
