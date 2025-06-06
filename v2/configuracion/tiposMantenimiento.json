@@ -22,9 +22,5 @@
     "trans": {
         "label": "Transferencia",
         "descripcion": "Servicio de pago por transferencia bancaria"
-    },
-    "metalico": {
-        "label": "Metalico",
-        "descripcion": "Servicio de pago metalico"
     }
 }

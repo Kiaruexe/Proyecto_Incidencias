@@ -827,8 +827,8 @@ $exito = false;
 
 // Procesar formulario de modificación
 if (isset($_POST['modificar'])) {
-    $tipoEquipoArray = $_POST['tipoEquipo'] ?? [];
-    $tipoEquipo = count($tipoEquipoArray) > 0 ? $tipoEquipoArray[0] : $equipoData['tipoEquipo'];
+   $tipoEquipo = isset($_POST['tipoEquipo']) ? $_POST['tipoEquipo'] : $equipoData['tipoEquipo'];
+
     
     $marca             = obtenerValor('marca', $equipoData['marca']);
     $modelo            = obtenerValor('modelo', $equipoData['modelo']);

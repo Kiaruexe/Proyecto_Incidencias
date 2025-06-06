@@ -28,6 +28,7 @@ $isClienteView = $filtroPermiso === 'cliente';
   <meta charset="UTF-8">
   <title>Ver Usuarios</title>
   <link rel="icon" href="../multimedia/logo-mapache.png" type="image/png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     * {
       box-sizing: border-box;
@@ -98,6 +99,14 @@ $isClienteView = $filtroPermiso === 'cliente';
 
     .home-button:hover {
       background: #0b7dda;
+    }
+
+    .pdf-button {
+      background: #dc3545;
+    }
+
+    .pdf-button:hover {
+      background: #bb2d3b;
     }
 
     form {
@@ -253,6 +262,9 @@ $isClienteView = $filtroPermiso === 'cliente';
     <div class="button-container">
       <a href="../home.php" class="button home-button">Volver al Inicio</a>
       <a href="crearUsuarios.php" class="button">Crear Nuevo Usuario</a>
+      <a href="pdf_usuarios.php?permiso=<?= urlencode($filtroPermiso) ?>" class="button pdf-button" target="_blank">
+        <i class="bi bi-file-earmark-pdf-fill"></i> Descargar PDF
+      </a>
     </div>
 
     <form method="get">
@@ -383,7 +395,8 @@ $isClienteView = $filtroPermiso === 'cliente';
         while ($row = $query->fetch()): ?>
           <div class="card">
             <div class="card-header"><?= htmlspecialchars($row['usuario']) ?> (ID
-              <?= htmlspecialchars($row['idUsuarios']) ?>)</div>
+              <?= htmlspecialchars($row['idUsuarios']) ?>)
+            </div>
             <div class="card-body">
               <div class="card-row">
                 <div class="card-label">Correo:</div>
@@ -400,7 +413,7 @@ $isClienteView = $filtroPermiso === 'cliente';
     <?php endif; ?>
 
   </div>
-  <footer>&copy;  <?php echo date('Y'); ?> Mapache Security</footer>
+  <footer>&copy; <?php echo date('Y'); ?> Mapache Security</footer>
 </body>
 
 </html>
