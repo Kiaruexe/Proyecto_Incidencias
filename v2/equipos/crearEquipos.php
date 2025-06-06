@@ -262,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $counter = $row['total'] + 1;
             
             // Prefijo
-            $tipoEquipoPrim = $data['tipoEquipo'][0];
+            $tipoEquipoPrim = $data['tipoEquipo'];
             $prefix = "EQ"; // Valor por defecto
             if (isset($tiposEquipo[$tipoEquipoPrim]) && !empty($tiposEquipo[$tipoEquipoPrim]['prefijo'])) {
                 $prefix = $tiposEquipo[$tipoEquipoPrim]['prefijo'];

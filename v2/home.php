@@ -13,7 +13,8 @@ try {
   die("Error crítico de servidor.");
 }
 
-function registrarLog(PDO $bd, string $accion, string $descripcion, string $usuario): void {
+function registrarLog(PDO $bd, string $accion, string $descripcion, string $usuario): void
+{
   try {
     $stmt = $bd->prepare("
       INSERT INTO `Log` (`accion`, `descripcion`, `fecha`, `usuario`)
@@ -25,7 +26,7 @@ function registrarLog(PDO $bd, string $accion, string $descripcion, string $usua
   }
 }
 
-set_exception_handler(function(Throwable $e) use($bd) {
+set_exception_handler(function (Throwable $e) use ($bd) {
   $usuario = $_SESSION['idUsuario'] ?? 'anónimo';
   $detalle = sprintf(
     "Excepción no capturada: %s en %s:%d\nStack trace:\n%s",
@@ -49,21 +50,21 @@ try {
   $query = $bd->prepare("SELECT permiso, usuario FROM Usuarios WHERE idUsuarios = ?");
   $query->execute([$_SESSION['idUsuario']]);
   $user = $query->fetch();
-  
+
   if (!$user) {
     throw new Exception("Usuario con ID {$_SESSION['idUsuario']} no existe");
   }
-  
+
   $permiso = strtolower($user['permiso']);
   $nombreUsuario = $user['usuario'];
-  
+
   registrarLog(
     $bd,
     'entrar en el home',
     "El usuario '{$nombreUsuario}' con permiso '{$permiso}' ha accedido al home.",
     $nombreUsuario
   );
-  
+
 } catch (Exception $e) {
   throw $e;
 }
@@ -346,6 +347,14 @@ try {
 
       <?php if ($permiso === 'admin'): ?>
         <div class="section">
+          <h2>Gestión de Clientes/Usuarios</h2>
+          <div class="btn-group">
+            <a href="usuarios/verUsuarios.php" class="btn-view">Ver</a>
+            <a href="usuarios/modificarUsuarios.php" class="btn-edit">Modificar</a>
+            <a href="usuarios/crearUsuarios.php" class="btn-create">Crear</a>
+          </div>
+        </div>
+        <div class="section">
           <h2>Gestión de Equipos</h2>
           <div class="btn-group">
             <a href="equipos/verEquipos.php" class="btn-view">Ver</a>
@@ -361,23 +370,10 @@ try {
             <a href="incidencias/crearIncidencias.php" class="btn-create">Crear</a>
           </div>
         </div>
-        <div class="section">
-          <h2>Gestión de Clientes/Usuarios</h2>
-          <div class="btn-group">
-            <a href="usuarios/verUsuarios.php" class="btn-view">Ver</a>
-            <a href="usuarios/modificarUsuarios.php" class="btn-edit">Modificar</a>
-            <a href="usuarios/crearUsuarios.php" class="btn-create">Crear</a>
-          </div>
-        </div>
+
 
       <?php elseif ($permiso === 'recepcion'): ?>
-        <div class="section">
-          <h2>Gestión de Equipos</h2>
-          <div class="btn-group">
-            <a href="equipos/verEquipos.php" class="btn-view">Ver</a>
-            <a href="equipos/modificarEquipo.php" class="btn-edit">Modificar</a>
-          </div>
-        </div>
+
         <div class="section">
           <h2>Gestión de Incidencias</h2>
           <div class="btn-group">
@@ -385,7 +381,13 @@ try {
             <a href="incidencias/crearIncidencias.php" class="btn-create">Crear</a>
           </div>
         </div>
-
+        <div class="section">
+          <h2>Gestión de Equipos</h2>
+          <div class="btn-group">
+            <a href="equipos/verEquipos.php" class="btn-view">Ver</a>
+            <a href="equipos/modificarEquipo.php" class="btn-edit">Modificar</a>
+          </div>
+        </div>
       <?php elseif ($permiso === 'cliente'): ?>
         <div class="section">
           <h2>Equipos</h2>
@@ -426,7 +428,13 @@ try {
             <a href="incidencias/modificarIncidencias.php" class="btn-edit">Modificar</a>
           </div>
         </div>
-
+        <div class="section">
+          <h2>Gestión de Equipos</h2>
+          <div class="btn-group">
+            <a href="equipos/verEquipos.php" class="btn-view">Ver</a>
+            <a href="equipos/modificarEquipo.php" class="btn-edit">Modificar</a>
+          </div>
+        </div>
       <?php else: ?>
         <div class="section sin-permiso">
           <p>No tienes permisos para acceder a esta página.</p>
